@@ -1,0 +1,625 @@
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\EntityFramework.6.4.4\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{11CA2181-61AB-408E-B7EA-FF70412C7D01}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CrawlFB_PW._1._0</RootNamespace>
+    <AssemblyName>CrawlFB_PW.1.0</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>3</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ClosedXML, Version=0.105.0.0, Culture=neutral, PublicKeyToken=fd1eb21b62ae805b, processorArchitecture=MSIL">
+      <HintPath>..\packages\ClosedXML.0.105.0\lib\netstandard2.0\ClosedXML.dll</HintPath>
+    </Reference>
+    <Reference Include="ClosedXML.Parser, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1d5f7376574c51ec, processorArchitecture=MSIL">
+      <HintPath>..\packages\ClosedXML.Parser.2.0.0\lib\netstandard2.0\ClosedXML.Parser.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.BonusSkins.v22.2" />
+    <Reference Include="DevExpress.Charts.v22.2.Core, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.Data.Desktop.v22.2" />
+    <Reference Include="DevExpress.Data.v22.2" />
+    <Reference Include="DevExpress.Printing.v22.2.Core" />
+    <Reference Include="DevExpress.Utils.v22.2" />
+    <Reference Include="DevExpress.Utils.v22.2.UI, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.XtraBars.v22.2" />
+    <Reference Include="DevExpress.Sparkline.v22.2.Core" />
+    <Reference Include="DevExpress.XtraCharts.v22.2, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.XtraCharts.v22.2.UI, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL" />
+    <Reference Include="DevExpress.XtraCharts.v22.2.Wizard, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.XtraEditors.v22.2" />
+    <Reference Include="DevExpress.Drawing.v22.2" />
+    <Reference Include="DevExpress.XtraGrid.v22.2, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL" />
+    <Reference Include="DevExpress.XtraLayout.v22.2, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DevExpress.XtraPrinting.v22.2, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
+    <Reference Include="DocumentFormat.OpenXml, Version=3.1.1.0, Culture=neutral, PublicKeyToken=8fb06cb64d019a17, processorArchitecture=MSIL">
+      <HintPath>..\packages\DocumentFormat.OpenXml.3.1.1\lib\net46\DocumentFormat.OpenXml.dll</HintPath>
+    </Reference>
+    <Reference Include="DocumentFormat.OpenXml.Framework, Version=3.1.1.0, Culture=neutral, PublicKeyToken=8fb06cb64d019a17, processorArchitecture=MSIL">
+      <HintPath>..\packages\DocumentFormat.OpenXml.Framework.3.1.1\lib\net46\DocumentFormat.OpenXml.Framework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="ExcelNumberFormat, Version=1.1.0.0, Culture=neutral, PublicKeyToken=23c6f5d73be07eca, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelNumberFormat.1.1.0\lib\net20\ExcelNumberFormat.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.6.0.0\lib\net461\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.HashCode.1.1.1\lib\net461\Microsoft.Bcl.HashCode.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Playwright, Version=1.55.0.0, Culture=neutral, PublicKeyToken=db12f80f85d8ba23, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Playwright.1.55.0\lib\netstandard2.0\Microsoft.Playwright.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="RBush, Version=4.0.0.0, Culture=neutral, PublicKeyToken=c77e27b81f4d0187, processorArchitecture=MSIL">
+      <HintPath>..\packages\RBush.Signed.4.0.0\lib\net47\RBush.dll</HintPath>
+    </Reference>
+    <Reference Include="SixLabors.Fonts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d998eea7b14cab13, processorArchitecture=MSIL">
+      <HintPath>..\packages\SixLabors.Fonts.1.0.0\lib\netstandard2.0\SixLabors.Fonts.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Annotations, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ComponentModel.Annotations.5.0.0\lib\net461\System.ComponentModel.Annotations.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.118.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=AMD64">
+      <HintPath>..\packages\System.Data.SQLite.x64.1.0.118.0\lib\net46\System.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.SQLite.EF6, Version=1.0.118.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.EF6.1.0.118.0\lib\net46\System.Data.SQLite.EF6.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.SQLite.Linq, Version=1.0.118.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.Linq.1.0.118.0\lib\net46\System.Data.SQLite.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IO.4.3.0\lib\net462\System.IO.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http, Version=4.1.1.3, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Net.Http.4.3.4\lib\net46\System.Net.Http.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.4.3.0\lib\net462\System.Runtime.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.Algorithms, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Security.Cryptography.Algorithms.4.3.0\lib\net463\System.Security.Cryptography.Algorithms.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.Encoding, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Security.Cryptography.Encoding.4.3.0\lib\net46\System.Security.Cryptography.Encoding.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.Primitives, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Security.Cryptography.Primitives.4.3.0\lib\net46\System.Security.Cryptography.Primitives.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.X509Certificates, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Security.Cryptography.X509Certificates.4.3.0\lib\net461\System.Security.Cryptography.X509Certificates.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Text.Encodings.Web, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Encodings.Web.6.0.0\lib\net461\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Json, Version=6.0.0.10, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Json.6.0.10\lib\net461\System.Text.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Analyzer\FTopic.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Analyzer\FTopic.Designer.cs">
+      <DependentUpon>FTopic.cs</DependentUpon>
+    </Compile>
+    <Compile Include="AppConfig.cs" />
+    <Compile Include="DAO\AdsPower\AdsPowerHelper.cs" />
+    <Compile Include="DAO\AdsPower\AdsPowerPlaywrightManager.cs" />
+    <Compile Include="DAO\AutoDAO.cs" />
+    <Compile Include="DAO\CrawlBaseDAO.cs" />
+    <Compile Include="DAO\CrawlPostReelDAO.cs" />
+    <Compile Include="DAO\Page\FirstScanPostPageDAO.cs" />
+    <Compile Include="DAO\Person\CrawlPostPersonDAO.cs" />
+    <Compile Include="DAO\DatabaseDAO.cs" />
+    <Compile Include="Helper\AttachmentHelper.cs" />
+    <Compile Include="Helper\ExcellHelper.cs" />
+    <Compile Include="DAO\Page\FindPageDAO.cs" />
+    <Compile Include="DAO\GroupsDAO_PW.cs" />
+    <Compile Include="DAO\InteractionEngine.cs" />
+    <Compile Include="DAO\Libary.cs" />
+    <Compile Include="DAO\Profile\ManagerProfileDAO.cs" />
+    <Compile Include="DAO\PageDAO.cs" />
+    <Compile Include="DAO\Page\CrawlPageDAO.cs" />
+    <Compile Include="Helper\PathHelper.cs" />
+    <Compile Include="DAO\Post\PostCategoryDAO.cs" />
+    <Compile Include="DAO\Comment\BasePostCommentDAO.cs" />
+    <Compile Include="DAO\Comment\PostNormalCommentDAO.cs" />
+    <Compile Include="DAO\Comment\PostReelCommentDAO.cs" />
+    <Compile Include="DAO\Comment\PostWatchCommentDAO.cs" />
+    <Compile Include="DAO\ProcessingDAO.cs" />
+    <Compile Include="DAO\Profile\ProfileInfoDAO.cs" />
+    <Compile Include="DAO\Profile\ProfileSlotManager.cs" />
+    <Compile Include="DAO\Page\ScanCheckPageDAO.cs" />
+    <Compile Include="DAO\SQLDAO.cs" />
+    <Compile Include="Helper\SqliteHelper.cs" />
+    <Compile Include="Helper\TextSimilarity.cs" />
+    <Compile Include="Helper\UI\UIStyleHelper.cs" />
+    <Compile Include="DAO\Page\UpdatePostPageDAO.cs" />
+    <Compile Include="DB\FDatabaseMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DB\FDatabaseMain.Designer.cs">
+      <DependentUpon>FDatabaseMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DB\FShowDB.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DB\FShowDB.Designer.cs">
+      <DependentUpon>FShowDB.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DB\FviewPageGS.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DB\FviewPageGS.Designer.cs">
+      <DependentUpon>FviewPageGS.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DTO\AutoResult.cs" />
+    <Compile Include="DTO\CommentItem.cs" />
+    <Compile Include="DTO\ManagerProfileDTO.cs" />
+    <Compile Include="DTO\PageInfo.cs" />
+    <Compile Include="DTO\PageMonitorRow.cs" />
+    <Compile Include="DTO\PersonInfo.cs" />
+    <Compile Include="DTO\PostPage.cs" />
+    <Compile Include="DTO\ProfileDB.cs" />
+    <Compile Include="DTO\ProfileInfo.cs" />
+    <Compile Include="DTO\ShareItem.cs" />
+    <Compile Include="Enums\EnumMain.cs" />
+    <Compile Include="FTestPhantich.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FTestPhantich.Designer.cs">
+      <DependentUpon>FTestPhantich.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Helper\UI\AcordingStyleHelper.cs" />
+    <Compile Include="Helper\ExcellHeper.cs" />
+    <Compile Include="Helper\JsonHelper.cs" />
+    <Compile Include="Helper\PersonPostGridHelper.cs" />
+    <Compile Include="Helper\ProcessingHelper.cs" />
+    <Compile Include="Helper\TimeHelper.cs" />
+    <Compile Include="Helper\UI\PostMappingHelper.cs" />
+    <Compile Include="Helper\UI\UICommercialHelper.cs" />
+    <Compile Include="Helper\UI\UIGridHelper.cs" />
+    <Compile Include="Helper\UI\UIPageInfoGridHelper.cs" />
+    <Compile Include="Helper\UI\UIPagerBarHelper.cs" />
+    <Compile Include="Helper\UI\UIPostGridHelper.cs" />
+    <Compile Include="Helper\UrlHelper.cs" />
+    <Compile Include="Page\FAddPagecs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FAddPagecs.Designer.cs">
+      <DependentUpon>FAddPagecs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FFindPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FFindPage.Designer.cs">
+      <DependentUpon>FFindPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FSelectPageScanNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FSelectPageScanNew.Designer.cs">
+      <DependentUpon>FSelectPageScanNew.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FFirstScanPostPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FFirstScanPostPage.Designer.cs">
+      <DependentUpon>FFirstScanPostPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FUpdatePostPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FUpdatePostPage.Designer.cs">
+      <DependentUpon>FUpdatePostPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FViewPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FViewPage.Designer.cs">
+      <DependentUpon>FViewPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FViewPagePro.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FViewPagePro.Designer.cs">
+      <DependentUpon>FViewPagePro.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\PopupAuto.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\PopupAuto.Designer.cs">
+      <DependentUpon>PopupAuto.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\ProfileStartup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\ProfileStartup.Designer.cs">
+      <DependentUpon>ProfileStartup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FMain.Designer.cs">
+      <DependentUpon>FMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormTest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTest.Designer.cs">
+      <DependentUpon>FormTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FAutoSupervisePage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FAutoSupervisePage.Designer.cs">
+      <DependentUpon>FAutoSupervisePage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FScanPostPage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FScanPostPage.Designer.cs">
+      <DependentUpon>FScanPostPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Page\FSupervisePage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FSupervisePage.Designer.cs">
+      <DependentUpon>FSupervisePage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Person\FCawrlPostPerson.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Person\FCawrlPostPerson.Designer.cs">
+      <DependentUpon>FCawrlPostPerson.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Post\FscanCommenPostFull.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Post\FscanCommenPostFull.Designer.cs">
+      <DependentUpon>FscanCommenPostFull.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Post\FScanCommentPost.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Post\FScanCommentPost.Designer.cs">
+      <DependentUpon>FScanCommentPost.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Profile\FManagerProfile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Profile\FManagerProfile.Designer.cs">
+      <DependentUpon>FManagerProfile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Profile\FsetupProfile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Profile\FsetupProfile.Designer.cs">
+      <DependentUpon>FsetupProfile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Profile\FSlotManagerProfile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Profile\FSlotManagerProfile.Designer.cs">
+      <DependentUpon>FSlotManagerProfile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Profile\SelectProfile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Profile\SelectProfile.Designer.cs">
+      <DependentUpon>SelectProfile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Profile\SelectProfileDB.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Profile\SelectProfileDB.Designer.cs">
+      <DependentUpon>SelectProfileDB.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service\PageDistributionService.cs" />
+    <Compile Include="UC\UCPageDB.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UC\UCPageDB.Designer.cs">
+      <DependentUpon>UCPageDB.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UC\UCPostMainDBcs.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UC\UCPostMainDBcs.Designer.cs">
+      <DependentUpon>UCPostMainDBcs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UC\UPageView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UC\UPageView.Designer.cs">
+      <DependentUpon>UPageView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\AttachmentRaw.cs" />
+    <Compile Include="ViewModels\BaseViewModel.cs" />
+    <Compile Include="ViewModels\CommentGridRow.cs" />
+    <Compile Include="ViewModels\PageInfoViewModel.cs" />
+    <Compile Include="ViewModels\PersonPostVM.cs" />
+    <Compile Include="ViewModels\PostInfoRawVM.cs" />
+    <Compile Include="ViewModels\PostInfoViewMode.cs" />
+    <Compile Include="ViewModels\PostResult.cs" />
+    <EmbeddedResource Include="Analyzer\FTopic.resx">
+      <DependentUpon>FTopic.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DB\FDatabaseMain.resx">
+      <DependentUpon>FDatabaseMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DB\FShowDB.resx">
+      <DependentUpon>FShowDB.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DB\FviewPageGS.resx">
+      <DependentUpon>FviewPageGS.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FTestPhantich.resx">
+      <DependentUpon>FTestPhantich.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FAddPagecs.resx">
+      <DependentUpon>FAddPagecs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FFindPage.resx">
+      <DependentUpon>FFindPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FSelectPageScanNew.resx">
+      <DependentUpon>FSelectPageScanNew.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FFirstScanPostPage.resx">
+      <DependentUpon>FFirstScanPostPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FUpdatePostPage.resx">
+      <DependentUpon>FUpdatePostPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FViewPage.resx">
+      <DependentUpon>FViewPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FViewPagePro.resx">
+      <DependentUpon>FViewPagePro.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\PopupAuto.resx">
+      <DependentUpon>PopupAuto.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\ProfileStartup.resx">
+      <DependentUpon>ProfileStartup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FMain.resx">
+      <DependentUpon>FMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTest.resx">
+      <DependentUpon>FormTest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FAutoSupervisePage.resx">
+      <DependentUpon>FAutoSupervisePage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FScanPostPage.resx">
+      <DependentUpon>FScanPostPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FSupervisePage.resx">
+      <DependentUpon>FSupervisePage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Person\FCawrlPostPerson.resx">
+      <DependentUpon>FCawrlPostPerson.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Post\FscanCommenPostFull.resx">
+      <DependentUpon>FscanCommenPostFull.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Post\FScanCommentPost.resx">
+      <DependentUpon>FScanCommentPost.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Profile\FManagerProfile.resx">
+      <DependentUpon>FManagerProfile.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Profile\FsetupProfile.resx">
+      <DependentUpon>FsetupProfile.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Profile\FSlotManagerProfile.resx">
+      <DependentUpon>FSlotManagerProfile.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Profile\SelectProfile.resx">
+      <DependentUpon>SelectProfile.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Profile\SelectProfileDB.resx">
+      <DependentUpon>SelectProfileDB.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\licenses.licx" />
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UC\UCPageDB.resx">
+      <DependentUpon>UCPageDB.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UC\UCPostMainDBcs.resx">
+      <DependentUpon>UCPostMainDBcs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UC\UPageView.resx">
+      <DependentUpon>UPageView.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\boemployee_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\boemployee_16x16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\show_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\show_16x16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\refesh.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Refresh_16x16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Reset2_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Open2_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Insert_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Next_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Action_Save_12x12.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Action_Save_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Show_32x321.png" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\Microsoft.Playwright.1.55.0\build\Microsoft.Playwright.targets" Condition="Exists('..\packages\Microsoft.Playwright.1.55.0\build\Microsoft.Playwright.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Playwright.1.55.0\build\Microsoft.Playwright.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Playwright.1.55.0\build\Microsoft.Playwright.targets'))" />
+    <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.props'))" />
+    <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.targets'))" />
+    <Error Condition="!Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets'))" />
+  </Target>
+  <Import Project="..\packages\EntityFramework.6.4.4\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" />
+  <Import Project="..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets" Condition="Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
