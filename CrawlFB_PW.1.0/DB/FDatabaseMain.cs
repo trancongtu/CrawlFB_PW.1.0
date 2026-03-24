@@ -79,5 +79,9 @@ namespace CrawlFB_PW._1._0.DB
             uc.BringToFront();
         }
 
+        private void ACEPageAll_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

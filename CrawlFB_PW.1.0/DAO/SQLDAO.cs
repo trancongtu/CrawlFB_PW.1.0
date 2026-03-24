@@ -16,11 +16,17 @@ using System.Data.SQLite;
 using static CrawlFB_PW._1._0.UC.UCPageDB;
 using DevExpress.Utils;
 using CrawlFB_PW._1._0.Enums;
+using CrawlFB_PW._1._0.ViewModels;
+using System.Data.Common;
+using CrawlFB_PW._1._0.DAO.phantich;
 //using DevExpress.XtraPrinting;
 
 public class SQLDAO
 {
     private static SQLDAO instance;
+    private readonly string _connectionString;
+    private SqlConnection _connection;
+    private SqlTransaction _transaction;
     public static SQLDAO Instance
     {
         get
@@ -30,13 +36,10 @@ public class SQLDAO
             return instance;
         }
     }
-
-    private string connectionString;
-
     private SQLDAO()
     {
         // 👉 Sửa chuỗi này nếu đổi server
-        connectionString = @"Server=DESKTOP-GRC118H\SQLEXPRESS;Database=AutoScanDB;Trusted_Connection=True;";
+        _connectionString = @"Server=DESKTOP-GRC118H\SQLEXPRESS;Database=AutoScanDB;Trusted_Connection=True;";
     }
 
     // ======================================================
@@ -46,29 +49,59 @@ public class SQLDAO
     /// <summary>
     /// Trả về SqlConnection (CHƯA mở) — để caller chủ động Open().
     /// </summary>
-    public SqlConnection GetConnection()
+    /*public SqlConnection GetConnection()
     {
         return new SqlConnection(connectionString);
+    }*/
+    public SqlConnection GetConnection()
+    {
+        return _connection ?? new SqlConnection(_connectionString);
     }
+
 
     /// <summary>
     /// Trả về SqlConnection đã Open() — dùng nhanh cho query.
     /// </summary>
-    public SqlConnection OpenConnection()
+    /*public SqlConnection OpenConnection()
     {
         var conn = new SqlConnection(connectionString);
         conn.Open();
         return conn; // caller phải Dispose !
     }
+    */
+    public SqlConnection OpenConnection()
+    {
+        if (_connection != null)
+            return _connection;
+
+        var conn = new SqlConnection(_connectionString);
+        conn.Open();
+        return conn;
+    }
 
     // ======================================================
     //  HÀM TEST KẾT NỐI
     // ======================================================
-    public bool TestConnection()
+   /* public bool TestConnection()
     {
         try
         {
             using (var conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                return true;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+    }*/
+    public bool TestConnection()
+    {
+        try
+        {
+            using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 return true;
@@ -83,7 +116,7 @@ public class SQLDAO
     // ======================================================
     //  HÀM QUERY CHUNG
     // ======================================================
-    public DataTable ExecuteQuery(string query, Dictionary<string, object> parameters = null)
+    /*public DataTable ExecuteQuery(string query, Dictionary<string, object> parameters = null)
     {
         DataTable dt = new DataTable();
 
@@ -99,17 +132,147 @@ public class SQLDAO
 
         return dt;
     }
-
-    public int ExecuteNonQuery(string query, Dictionary<string, object> parameters = null)
+    */
+    public DataTable ExecuteQuery(
+     string sql,
+     Dictionary<string, object> parameters = null)
     {
-        using (var conn = OpenConnection())
-        using (var cmd = new SqlCommand(query, conn))
+        using (var cmd = new SqlCommand(sql))
         {
-            AddParams(cmd, parameters);
-            return cmd.ExecuteNonQuery();
+            // 1️⃣ Connection
+            cmd.Connection = _connection ?? new SqlConnection(_connectionString);
+
+            // 2️⃣ Transaction – chỉ khi còn hiệu lực
+            if (_transaction != null && _transaction.Connection != null)
+            {
+                cmd.Transaction = _transaction;
+            }
+
+            // 3️⃣ Parameters
+            if (parameters != null)
+            {
+                foreach (var p in parameters)
+                {
+                    cmd.Parameters.AddWithValue(
+                        p.Key,
+                        p.Value ?? DBNull.Value
+                    );
+                }
+            }
+
+            // 4️⃣ Open connection
+            if (cmd.Connection.State != ConnectionState.Open)
+                cmd.Connection.Open();
+
+            // 5️⃣ Fill DataTable
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                var dt = new DataTable();
+                da.Fill(dt);
+
+                // 6️⃣ Dispose connection nếu ngoài transaction
+                if (_transaction == null)
+                    cmd.Connection.Dispose();
+
+                return dt;
+            }
         }
     }
-    public object ExecuteScalar(string query, Dictionary<string, object> parameters = null)
+
+    /* public int ExecuteNonQuery(string query, Dictionary<string, object> parameters = null)
+     {
+         using (var conn = OpenConnection())
+         using (var cmd = new SqlCommand(query, conn))
+         {
+             AddParams(cmd, parameters);
+             return cmd.ExecuteNonQuery();
+         }
+     }
+    */
+    public int ExecuteNonQuery(
+     string sql,
+     Dictionary<string, object> parameters = null)
+    {
+        using (var cmd = new SqlCommand(sql))
+        {
+            // 1️⃣ Connection
+            cmd.Connection = _connection ?? new SqlConnection(_connectionString);
+
+            // 2️⃣ Transaction – CHỈ gắn khi còn ACTIVE
+            if (_transaction != null && _transaction.Connection != null)
+            {
+                cmd.Transaction = _transaction;
+            }
+
+            // 3️⃣ Parameters
+            if (parameters != null)
+            {
+                foreach (var p in parameters)
+                {
+                    cmd.Parameters.AddWithValue(
+                        p.Key,
+                        p.Value ?? DBNull.Value
+                    );
+                }
+            }
+
+            // 4️⃣ Open connection nếu cần
+            if (cmd.Connection.State != ConnectionState.Open)
+                cmd.Connection.Open();
+
+            int affected = cmd.ExecuteNonQuery();
+
+            // 5️⃣ Chỉ dispose connection nếu KHÔNG trong transaction
+            if (_transaction == null)
+                cmd.Connection.Dispose();
+
+            return affected;
+        }
+    }
+
+    public void ExecuteInTransaction(Action action)
+    {
+        // Tránh lồng transaction
+        if (_transaction != null)
+        {
+            action.Invoke();
+            return;
+        }
+
+        using (var conn = new SqlConnection(_connectionString))
+        {
+            conn.Open();
+
+            using (var tran = conn.BeginTransaction())
+            {
+                try
+                {
+                    _connection = conn;
+                    _transaction = tran;
+
+                    action.Invoke();
+
+                    tran.Commit();
+                }
+                catch
+                {
+                    tran.Rollback();
+                    throw;
+                }
+                finally
+                {
+                    if (_transaction != null)
+                        _transaction.Dispose();
+
+                    _transaction = null;
+                    _connection = null;
+                }
+            }
+        }
+    }
+
+
+    /*public object ExecuteScalar(string query, Dictionary<string, object> parameters = null)
     {
         using (var conn = OpenConnection())
         using (var cmd = new SqlCommand(query, conn))
@@ -117,7 +280,48 @@ public class SQLDAO
             AddParams(cmd, parameters);
             return cmd.ExecuteScalar();
         }
+    }*/
+    public object ExecuteScalar(
+    string sql,
+    Dictionary<string, object> parameters = null)
+    {
+        using (var cmd = new SqlCommand(sql))
+        {
+            // 1️⃣ Connection
+            cmd.Connection = _connection ?? new SqlConnection(_connectionString);
+
+            // 2️⃣ Transaction – chỉ khi còn hiệu lực
+            if (_transaction != null && _transaction.Connection != null)
+            {
+                cmd.Transaction = _transaction;
+            }
+
+            // 3️⃣ Parameters
+            if (parameters != null)
+            {
+                foreach (var p in parameters)
+                {
+                    cmd.Parameters.AddWithValue(
+                        p.Key,
+                        p.Value ?? DBNull.Value
+                    );
+                }
+            }
+
+            // 4️⃣ Open connection
+            if (cmd.Connection.State != ConnectionState.Open)
+                cmd.Connection.Open();
+
+            object result = cmd.ExecuteScalar();
+
+            // 5️⃣ Dispose connection nếu ngoài transaction
+            if (_transaction == null)
+                cmd.Connection.Dispose();
+
+            return result == DBNull.Value ? null : result;
+        }
     }
+
 
     // → Query list of objects
     public List<T> QueryList<T>(string query, Func<IDataReader, T> parser, Dictionary<string, object> parameters = null)
@@ -152,6 +356,7 @@ public class SQLDAO
             cmd.Parameters.AddWithValue(p.Key, p.Value ?? DBNull.Value);
         }
     }
+
     //===============
     // HÀM TẠO TABLE
     public void CreateTableAuto()
@@ -314,7 +519,9 @@ public class SQLDAO
             BEGIN
                 CREATE TABLE TableKeyword (
                     KeywordId INT IDENTITY(1,1) PRIMARY KEY,
-                    KeywordName NVARCHAR(500) NOT NULL UNIQUE
+                    KeywordName NVARCHAR(500) NOT NULL UNIQUE,
+                    CreatedTime DATETIME NOT NULL
+                    CONSTRAINT DF_TableKeyword_CreatedTime DEFAULT GETDATE()
                 );
             END
 
@@ -340,6 +547,7 @@ public class SQLDAO
                     Id INT IDENTITY(1,1) PRIMARY KEY,
                     TopicId INT NOT NULL,
                     PostId NVARCHAR(200) NOT NULL,
+                    CreatedTime DATETIME NOT NULL
                     CONSTRAINT UQ_TopicPost UNIQUE(TopicId, PostId)
                 );
             END
@@ -403,6 +611,32 @@ public class SQLDAO
                     TimeSave DATETIME2(0) DEFAULT SYSDATETIME()
                 );
             END
+        -----------------------
+            IF NOT EXISTS (
+                SELECT 1 
+                FROM sys.columns 
+                WHERE Name = N'CreatedTime'
+                  AND Object_ID = Object_ID(N'TableKeyword')
+            )
+            BEGIN
+                ALTER TABLE TableKeyword
+                ADD CreatedTime DATETIME NOT NULL
+                    CONSTRAINT DF_TableKeyword_CreatedTime
+                    DEFAULT GETDATE();
+            END
+          -----------------
+            IF NOT EXISTS (
+                SELECT 1 
+                FROM sys.columns 
+                WHERE Name = N'CreatedTime'
+                  AND Object_ID = Object_ID(N'TableTopicPost')
+            )
+            BEGIN
+                ALTER TABLE TableTopicPost
+                ADD CreatedTime DATETIME NOT NULL
+                    CONSTRAINT DF_TableTopicPost_CreatedTime
+                    DEFAULT GETDATE();
+            END
             ";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -416,6 +650,156 @@ public class SQLDAO
         }
     }
     //===================
+    public void EnsureEvaluationTables()
+    {
+        string sql = @"
+               -- =========================
+        -- ATTENTION KEYWORD SCORE
+        -- =========================
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TableAttentionKeywordScore')
+        BEGIN
+            CREATE TABLE TableAttentionKeywordScore (
+                KeywordId INT PRIMARY KEY,
+                Score INT NOT NULL DEFAULT 0 CHECK (Score BETWEEN 0 AND 30),
+                TrackingLevel INT NOT NULL DEFAULT 1 CHECK (TrackingLevel BETWEEN 1 AND 5),
+                Note NVARCHAR(200),
+
+                CONSTRAINT FK_Attention_Keyword
+                    FOREIGN KEY (KeywordId)
+                    REFERENCES TableKeyword(KeywordId)
+                    ON DELETE CASCADE
+            );
+        END
+        ELSE
+        BEGIN
+            -- Thêm TrackingLevel nếu DB cũ chưa có
+            IF COL_LENGTH('TableAttentionKeywordScore', 'TrackingLevel') IS NULL
+            BEGIN
+                ALTER TABLE TableAttentionKeywordScore
+                ADD TrackingLevel INT NOT NULL DEFAULT 1
+                CHECK (TrackingLevel BETWEEN 1 AND 5);
+            END
+        END
+                  -- =========================
+            -- NEGATIVE KEYWORD SCORE
+            -- =========================
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TableNegativeKeywordScore')
+            BEGIN
+                CREATE TABLE TableNegativeKeywordScore (
+                    KeywordId INT PRIMARY KEY,
+                    Score INT NOT NULL DEFAULT 0 CHECK (Score BETWEEN 0 AND 50),
+                    NegativeLevel INT NOT NULL DEFAULT 1 CHECK (NegativeLevel BETWEEN 1 AND 5),
+                    IsCritical BIT DEFAULT 0,
+                    Note NVARCHAR(200),
+
+                    CONSTRAINT FK_Negative_Keyword
+                        FOREIGN KEY (KeywordId)
+                        REFERENCES TableKeyword(KeywordId)
+                        ON DELETE CASCADE
+                );
+            END
+            ELSE
+            BEGIN
+                -- Thêm NegativeLevel nếu DB cũ chưa có
+                IF COL_LENGTH('TableNegativeKeywordScore', 'NegativeLevel') IS NULL
+                BEGIN
+                    ALTER TABLE TableNegativeKeywordScore
+                    ADD NegativeLevel INT NOT NULL DEFAULT 1
+                    CHECK (NegativeLevel BETWEEN 1 AND 5);
+                END
+                END
+     -- =========================
+        -- EXCLUDE KEYWORD
+        -- =========================
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TableExcludeKeyword')
+        BEGIN
+                   CREATE TABLE TableExcludeKeyword (
+            KeywordId INT PRIMARY KEY,
+            Level INT NOT NULL DEFAULT 1 CHECK (Level BETWEEN 1 AND 7),
+            Note NVARCHAR(200),
+            CreatedAt DATETIME2 DEFAULT SYSDATETIME(),
+
+            CONSTRAINT FK_Exclude_Keyword
+                FOREIGN KEY (KeywordId)
+                REFERENCES TableKeyword(KeywordId)
+                ON DELETE CASCADE
+        );
+
+        END
+            -- Nếu bảng đã tồn tại nhưng thiếu Level
+            IF EXISTS (SELECT * FROM sysobjects WHERE name='TableExcludeKeyword')
+            BEGIN
+                IF COL_LENGTH('TableExcludeKeyword', 'Level') IS NULL
+                BEGIN
+                    ALTER TABLE TableExcludeKeyword
+                    ADD Level INT NOT NULL DEFAULT 1
+                    CHECK (Level BETWEEN 1 AND 7);
+                END
+            END
+
+             -- =========================
+        -- POST EVALUATION (FINAL)
+        -- =========================
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TablePostEvaluation')
+        BEGIN
+          CREATE TABLE TablePostEvaluation (
+            PostID NVARCHAR(200) PRIMARY KEY,
+
+            AttentionScore INT NOT NULL DEFAULT 0,
+            AttentionLevel INT NOT NULL DEFAULT 0,
+
+            NegativeScore INT NOT NULL DEFAULT 0,
+            NegativeLevel INT NOT NULL DEFAULT 0,
+
+            InteractionScore INT NOT NULL DEFAULT 0,
+
+            TotalScore INT NOT NULL DEFAULT 0,
+
+            ResultLevel INT NOT NULL DEFAULT 0,
+
+            AttentionKeywordIds NVARCHAR(MAX) NULL,   -- JSON
+            NegativeKeywordIds NVARCHAR(MAX) NULL,    -- JSON
+
+            KeywordVersion INT NOT NULL DEFAULT 1,
+
+            EvaluatedAt DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+
+            CONSTRAINT FK_PostEvaluation_Post
+                FOREIGN KEY (PostID)
+                REFERENCES TablePostInfo(PostID)
+                ON DELETE CASCADE
+            );
+        END
+        -- =========================
+        -- KEYWORD VERSION (CACHE CONTROL)
+        -- =========================
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TableKeywordVersion')
+        BEGIN
+            CREATE TABLE TableKeywordVersion (
+                Id INT PRIMARY KEY DEFAULT 1,
+                CurrentVersion INT NOT NULL DEFAULT 1,
+                LastUpdated DATETIME2 DEFAULT SYSDATETIME()
+            );
+
+            -- Insert bản ghi mặc định
+            INSERT INTO TableKeywordVersion (Id, CurrentVersion)
+            VALUES (1, 1);
+        END
+        -- =========================
+        -- ADD KeywordVersion COLUMN (if not exists)
+        -- =========================
+        IF EXISTS (SELECT * FROM sysobjects WHERE name='TablePostEvaluation')
+        BEGIN
+            IF COL_LENGTH('TablePostEvaluation', 'KeywordVersion') IS NULL
+            BEGIN
+                ALTER TABLE TablePostEvaluation
+                ADD KeywordVersion INT NOT NULL DEFAULT 1;
+            END
+        END
+        ";
+        ExecuteNonQuery(sql);
+    }
+
     //===== HÀM TIỆN ÍCH MÀ HASH=========
     public static string GeneratePostId(string postLink)
     {
@@ -726,60 +1110,10 @@ public class SQLDAO
     }*/
     public void InsertOrIgnorePost(PostPage p)
     {
-        if (p == null || string.IsNullOrWhiteSpace(p.PostLink))
+        if (p == null || !ProcessingHelper.IsValidContent(p.PostLink))
             return;
 
         string postId = GeneratePostId(p.PostLink);
-
-        // =================================================
-        // 🔑 RESOLVE ID (IDFB FIRST, FALLBACK HASH)
-        // =================================================
-        string ResolveId(string idfb, string link)
-        {
-            if (!string.IsNullOrWhiteSpace(idfb))
-                return idfb;
-
-            if (!string.IsNullOrWhiteSpace(link))
-                return GenerateHashId(link);
-
-            return null;
-        }
-
-        // =================================================
-        // PAGE CONTAINER
-        // =================================================
-        string pageContainerId = ResolveId(p.ContainerIdFB, p.PageLink);
-
-        // =================================================
-        // POSTER
-        // =================================================
-        string posterPageId = null;
-        string posterPersonId = null;
-
-        bool isPagePoster =
-            !string.IsNullOrWhiteSpace(p.PosterNote) &&
-            p.PosterNote.ToLower().Contains("page");
-
-        if (isPagePoster)
-            posterPageId = ResolveId(p.PosterIdFB, p.PosterLink);
-        else
-            posterPersonId = ResolveId(p.PosterIdFB, p.PosterLink);
-
-        // tránh trùng container
-        if (!string.IsNullOrWhiteSpace(posterPageId) &&
-            posterPageId == pageContainerId)
-        {
-            posterPageId = null;
-        }
-
-        // =================================================
-        // REAL POST TIME
-        // =================================================
-        DateTime? parsedTime = TimeHelper.ParseFacebookTime(p.PostTime);
-        object realPostTime =
-            parsedTime == DateTime.MinValue
-                ? (object)DBNull.Value
-                : parsedTime;
 
         using (var conn = SQLDAO.Instance.OpenConnection())
         using (var tran = conn.BeginTransaction())
@@ -791,78 +1125,164 @@ public class SQLDAO
             try
             {
                 // =================================================
-                // HELPER: MERGE PAGE (KEY = PageID)
+                // 🔥 HELPER: RESOLVE + CREATE PAGE
                 // =================================================
-                void MergePage(string pageId, string link, string name, string type)
+                // =========================
+                // RESOLVE + CREATE PAGE
+                // =========================
+                string ResolveOrCreatePageId(string idfb, string link, string name)
                 {
-                    if (string.IsNullOrWhiteSpace(pageId))
-                        return;
+                    // normalize link
+                    link = ProcessingHelper.NormalizeInputUrl(link);
 
+                    string pageId = null;
+
+                    // =========================
+                    // 1️⃣ ƯU TIÊN IDFB
+                    // =========================
+                    if (ProcessingHelper.IsValidContent(idfb))
+                        pageId = idfb;
+                    else if (ProcessingHelper.IsValidContent(link))
+                        pageId = GenerateHashId(link);
+                    else
+                        return null;
+
+                    // =========================
+                    // 2️⃣ CHECK DB (ID OR LINK)
+                    // =========================
                     cmd.CommandText = @"
-                MERGE TablePageInfo t
-                USING (SELECT @id AS PageID) s
-                ON t.PageID = s.PageID
-                WHEN NOT MATCHED THEN
-                 INSERT(PageID, PageLink, PageName, PageType, PageTimeSave)
-                 VALUES(@id,@link,@name,@type,SYSDATETIME())
-                WHEN MATCHED THEN
-                 UPDATE SET
-                   PageLink = COALESCE(NULLIF(@link,''), t.PageLink),
-                   PageName = COALESCE(NULLIF(@name,''), t.PageName);";
+        SELECT TOP 1 PageID 
+        FROM TablePageInfo 
+        WHERE PageID=@id OR PageLink=@link";
 
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = pageId;
                     cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = link ?? "";
-                    cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = name ?? "";
-                    cmd.Parameters.Add("@type", SqlDbType.NVarChar, 50).Value = type;
 
-                    cmd.ExecuteNonQuery();
-                }
+                    var exist = cmd.ExecuteScalar();
 
-                // =================================================
-                // 1️⃣ PAGE CONTAINER
-                // =================================================
-                MergePage(
-                    pageContainerId,
-                    p.PageLink,
-                    p.PageName,
-                    p.PageLink != null && p.PageLink.Contains("/groups/")
-                        ? "groups"
-                        : "fanpage"
-                );
+                    if (exist != null)
+                    {
+                        string existId = exist.ToString();
 
-                // =================================================
-                // 2️⃣ PAGE POSTER
-                // =================================================
-                MergePage(
-                    posterPageId,
-                    p.PosterLink,
-                    p.PosterName,
-                    p.PosterLink != null && p.PosterLink.Contains("/groups/")
-                        ? "groups"
-                        : "fanpage"
-                );
+                        // =========================
+                        // 🔥 ENRICH (UPDATE THÊM IDFB NẾU CHƯA CÓ)
+                        // =========================
+                        cmd.CommandText = @"
+            UPDATE TablePageInfo
+            SET 
+                IDFBPage = COALESCE(IDFBPage, @idfb),
+                PageLink = COALESCE(NULLIF(@link,''), PageLink),
+                PageName = COALESCE(NULLIF(@name,''), PageName)
+            WHERE PageID=@id";
 
-                // =================================================
-                // 3️⃣ PERSON POSTER
-                // =================================================
-                if (!string.IsNullOrWhiteSpace(posterPersonId))
-                {
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = existId;
+                        cmd.Parameters.Add("@idfb", SqlDbType.NVarChar, 200)
+                            .Value = ProcessingHelper.IsValidContent(idfb)
+                                ? (object)idfb
+                                : DBNull.Value;
+                        cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = link ?? "";
+                        cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = name ?? "";
+
+                        cmd.ExecuteNonQuery();
+
+                        return existId;
+                    }
+
+                    // =========================
+                    // 3️⃣ INSERT SEED
+                    // =========================
                     cmd.CommandText = @"
-                IF NOT EXISTS (SELECT 1 FROM TablePersonInfo WHERE PersonID=@id)
-                INSERT INTO TablePersonInfo
-                (PersonID, PersonLink, PersonName, PersonNote, PersonTimeSave)
-                VALUES (@id,@link,@name,@note,SYSDATETIME());";
+        INSERT INTO TablePageInfo
+        (PageID, IDFBPage, PageLink, PageName, PageType, PageTimeSave)
+        VALUES (@id,@idfb,@link,@name,@type,SYSDATETIME());";
 
                     cmd.Parameters.Clear();
-                    cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = posterPersonId;
-                    cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = p.PosterLink ?? "";
-                    cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = p.PosterName ?? "";
-                    cmd.Parameters.Add("@note", SqlDbType.NVarChar).Value = p.PosterNote ?? "";
+                    cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = pageId;
+
+                    cmd.Parameters.Add("@idfb", SqlDbType.NVarChar, 200)
+                        .Value = ProcessingHelper.IsValidContent(idfb)
+                            ? (object)idfb
+                            : DBNull.Value;
+
+                    cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = link ?? "";
+                    cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = name ?? "";
+
+                    cmd.Parameters.Add("@type", SqlDbType.NVarChar, 50).Value =
+                        link != null && link.Contains("/groups/")
+                            ? "groups"
+                            : "fanpage";
 
                     cmd.ExecuteNonQuery();
+
+                    return pageId;
                 }
 
+                // =================================================
+                // 1️⃣ CONTAINER (QUAN TRỌNG NHẤT)
+                // =================================================
+                string pageContainerId = ResolveOrCreatePageId(
+                    p.ContainerIdFB,
+                    p.PageLink,
+                    p.PageName
+                );
+                Libary.Instance.LogTech(
+    $"[DB-RESOLVE] Post={postId} | ContainerID={pageContainerId} | RawContainer={p.ContainerIdFB} | PageLink={p.PageLink}"
+);
+                // =================================================
+                // 2️⃣ POSTER
+                // =================================================
+                string posterPageId = null;
+                string posterPersonId = null;
+
+                bool isPagePoster =
+                    !string.IsNullOrWhiteSpace(p.PosterNote) &&
+                    p.PosterNote.ToLower().Contains("page");
+
+                if (isPagePoster)
+                {
+                    posterPageId = ResolveOrCreatePageId(
+                        p.PosterIdFB,
+                        p.PosterLink,
+                        p.PosterName
+                    );
+                }
+                else
+                {
+                    if (ProcessingHelper.IsValidContent(p.PosterIdFB))
+                    {
+                        posterPersonId = p.PosterIdFB;
+
+                        cmd.CommandText = @"
+                        IF NOT EXISTS (SELECT 1 FROM TablePersonInfo WHERE PersonID=@id)
+                        INSERT INTO TablePersonInfo
+                        (PersonID, PersonLink, PersonName, PersonNote, PersonTimeSave)
+                        VALUES (@id,@link,@name,@note,SYSDATETIME());";
+
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = posterPersonId;
+                        cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = p.PosterLink ?? "";
+                        cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = p.PosterName ?? "";
+                        cmd.Parameters.Add("@note", SqlDbType.NVarChar).Value = p.PosterNote ?? "";
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                Libary.Instance.LogTech(
+    $"[DB-POSTER] Post={postId} | PosterPage={posterPageId} | PosterPerson={posterPersonId} | Note={p.PosterNote}"
+);
+                // =================================================
+                // 3️⃣ REAL TIME
+                // =================================================
+                DateTime? parsedTime = TimeHelper.ParseFacebookTime(p.PostTime);
+                object realPostTime =
+                    parsedTime == DateTime.MinValue
+                        ? (object)DBNull.Value
+                        : parsedTime;
+                Libary.Instance.LogTech(
+    $"[DB-MAP] Post={postId} | CreatePage={posterPageId} | ContainerPage={pageContainerId} | Person={posterPersonId}"
+);
                 // =================================================
                 // 4️⃣ POST INFO
                 // =================================================
@@ -872,16 +1292,16 @@ public class SQLDAO
                 ON t.PostID = s.PostID
                 WHEN MATCHED THEN
                  UPDATE SET
-                  PostLink=@link,
-                  PostContent=@content,
-                  PostTime=@timeRaw,
-                  RealPostTime=@timeReal,
-                  LikeCount=@like,
-                  ShareCount=@share,
-                  CommentCount=@comment,
-                  PostAttachment=@attachment,
-                  PostStatus=@status,
-                  PostTimeSave=SYSDATETIME()
+                   PostLink=@link,
+                   PostContent=@content,
+                   PostTime=@timeRaw,
+                   RealPostTime=@timeReal,
+                   LikeCount=@like,
+                   ShareCount=@share,
+                   CommentCount=@comment,
+                   PostAttachment=@attachment,
+                   PostStatus=@status,
+                   PostTimeSave=SYSDATETIME()
                 WHEN NOT MATCHED THEN
                  INSERT
                  (PostID,PostLink,PostContent,PostTime,RealPostTime,
@@ -905,21 +1325,22 @@ public class SQLDAO
                 cmd.ExecuteNonQuery();
 
                 // =================================================
-                // 5️⃣ POST MAP
+                // 5️⃣ POST MAP (FIX LỖI CŨ)
                 // =================================================
-                if (posterPageId == null &&
-                    posterPersonId == null &&
-                    pageContainerId != null)
-                {
-                    posterPageId = pageContainerId;
-                }
-
                 cmd.CommandText = @"
-            IF NOT EXISTS (SELECT 1 FROM TablePost WHERE PostID=@id)
-            INSERT INTO TablePost
-            (PostID, PageIDCreate, PageIDContainer, PersonIDCreate)
-            VALUES
-            (@id,@createPage,@containerPage,@createPerson);";
+                MERGE TablePost t
+                USING (SELECT @id AS PostID) s
+                ON t.PostID = s.PostID
+
+                WHEN MATCHED THEN
+                 UPDATE SET
+                   PageIDCreate = COALESCE(@createPage, t.PageIDCreate),
+                   PageIDContainer = COALESCE(@containerPage, t.PageIDContainer),
+                   PersonIDCreate = COALESCE(@createPerson, t.PersonIDCreate)
+
+                WHEN NOT MATCHED THEN
+                 INSERT (PostID, PageIDCreate, PageIDContainer, PersonIDCreate)
+                 VALUES (@id,@createPage,@containerPage,@createPerson);";
 
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = postId;
@@ -1638,7 +2059,26 @@ WHERE PostLink = @link
 
         return ProcessingHelper.MapPageTypeToFBType(val?.ToString());
     }
+    public string GetIDFBPageByPageID(string pageId)
+    {
+        if (string.IsNullOrWhiteSpace(pageId))
+            return null;
 
+        const string sql = @"
+    SELECT TOP 1 IDFBPage
+    FROM TablePageInfo
+    WHERE PageID = @id
+      AND IDFBPage IS NOT NULL
+      AND IDFBPage <> 'N/A'
+    ";
+
+        object v = ExecuteScalar(sql, new Dictionary<string, object>
+        {
+            ["@id"] = pageId
+        });
+
+        return v?.ToString();
+    }
     public (FBType Type, string IdFB)? GetPageTypeIdFbByLink(string link)
     {
         if (string.IsNullOrWhiteSpace(link))
@@ -1677,8 +2117,44 @@ WHERE PostLink = @link
             idfb
         );
     }
+    public PageInfo GetPageByIDFB(string idfbPage)
+    {
+        if (string.IsNullOrWhiteSpace(idfbPage) || idfbPage == "N/A")
+            return null;
 
+        const string sql = @"
+    SELECT TOP 1
+        PageID,
+        IDFBPage,
+        PageName,
+        PageLink,
+        PageType
+   
+    FROM TablePageInfo
+    WHERE IDFBPage = @idfb
+    ";
 
+        using (var conn = OpenConnection())
+        using (var cmd = new SqlCommand(sql, conn))
+        {
+            cmd.Parameters.Add("@idfb", SqlDbType.NVarChar, 200).Value = idfbPage;
+
+            using (var rd = cmd.ExecuteReader())
+            {
+                if (!rd.Read())
+                    return null;
+
+                return new PageInfo
+                {
+                    PageID = rd["PageID"]?.ToString(),
+                    IDFBPage = rd["IDFBPage"]?.ToString(),
+                    PageName = rd["PageName"]?.ToString(),
+                    PageLink = rd["PageLink"]?.ToString(),
+                    PageType = rd["PageType"]?.ToString(),                
+                };
+            }
+        }
+    }
 
     //==============hàm dưới phục vụ in ra page (trang)
     public DataTable GetPageNotePage(int pageIndex,int pageSize, out int totalRows)
@@ -1766,61 +2242,6 @@ WHERE PostLink = @link
             }
         }
     }
-   /* public PageInfo GetPageInfoByID(string pageID)
-    {
-        try
-        {
-            const string sql = @"
-            SELECT 
-                PageID,
-                IDFBPage,
-                PageLink,
-                PageName,
-                PageType,
-                PageMembers,
-                PageInteraction,
-                PageEvaluation,
-                PageInfoText,
-                IsScanned,
-                PageTimeSave
-            FROM TablePageInfo
-            WHERE PageID = @id";
-
-            using (var conn = OpenConnection())
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                cmd.Parameters.AddWithValue("@id", pageID);
-
-                using (var rd = cmd.ExecuteReader())
-                {
-                    if (rd.Read())
-                    {
-                        return new PageInfo
-                        {
-                            PageID = rd["PageID"]?.ToString() ?? "",
-                            IDFBPage = rd["IDFBPage"]?.ToString() ?? "N/A",
-                            PageLink = rd["PageLink"]?.ToString() ?? "",
-                            PageName = rd["PageName"]?.ToString() ?? "",
-                            PageType = rd["PageType"]?.ToString() ?? "",
-                            PageMembers = rd["PageMembers"]?.ToString() ?? "N/A",
-                            PageInteraction = rd["PageInteraction"]?.ToString() ?? "N/A",
-                            PageEvaluation = rd["PageEvaluation"]?.ToString() ?? "N/A",
-                            PageInfoText = rd["PageInfoText"]?.ToString() ?? "N/A",
-                            IsScanned = rd["IsScanned"] != DBNull.Value && Convert.ToInt32(rd["IsScanned"]) == 1,
-                            PageTimeSave = rd["PageTimeSave"]?.ToString() ?? ""
-                        };
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Libary.Instance.CreateLog("❌ GetPageInfoByID SQL ERROR: " + ex.Message);
-        }
-
-        return null;
-    }
-   */
     public bool CheckPageExistsByLink(string pageLink)
     {
         try
@@ -2277,6 +2698,26 @@ WHERE PostLink = @link
 
         return dt;
     }
+    public HashSet<string> GetAllPageInMonitor()
+    {
+        var set = new HashSet<string>();
+
+        using (var conn = OpenConnection())
+        {
+            string sql = "SELECT PageID FROM TablePageMonitor";
+
+            using (var cmd = new SqlCommand(sql, conn))
+            using (var rd = cmd.ExecuteReader())
+            {
+                while (rd.Read())
+                {
+                    set.Add(rd["PageID"].ToString());
+                }
+            }
+        }
+
+        return set;
+    }
     public void UpdateMonitorStatus(string pageId, string status)
     {
         try
@@ -2297,6 +2738,19 @@ WHERE PostLink = @link
         catch (Exception ex)
         {
             Libary.Instance.CreateLog("❌ UpdateMonitorStatus SQL ERROR: " + ex.Message);
+        }
+    }
+    public bool CheckPageInMonitor(string pageId)
+    {
+        using (var conn = OpenConnection())
+        {
+            string sql = "SELECT COUNT(1) FROM TablePageMonitor WHERE PageID = @id";
+
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@id", pageId);
+                return (int)cmd.ExecuteScalar() > 0;
+            }
         }
     }
     //==========
@@ -2436,8 +2890,6 @@ WHERE PostLink = @link
             return null;
         }
     }
-
-
 
     //========================
     //==========DATABASE
@@ -2675,7 +3127,6 @@ WHERE PostLink = @link
             idfb
         );
     }
-
 
     //Table SHARE
     public void InsertPostShares(IEnumerable<ShareItem> shares)
@@ -2941,7 +3392,6 @@ WHERE PostLink = @link
         ExecuteNonQuery(sql);
     }
 
-
     // SQL MỞI THEO VIEMMODEL
  
     public int GetPostIdByLink(string postLink)
@@ -3062,5 +3512,991 @@ WHERE PostLink = @link
 
         return "Tự đăng";
     }
+    //SQL Keyword
+    public List<KeywordDTO> GetAllKeyword()
+    {
+        string sql = @"
+        SELECT KeywordId, KeywordName
+        FROM TableKeyword
+        ORDER BY KeywordName;
+    ";
 
+        return QueryList(sql, rd => new KeywordDTO
+        {
+            KeywordId = Convert.ToInt32(rd["KeywordId"]),
+            KeywordName = rd["KeywordName"].ToString()
+        });
+    }
+    public bool KeywordExists(string keywordName)
+    {
+        object v = ExecuteScalar(@"
+        SELECT 1
+        FROM TableKeyword
+        WHERE KeywordName = @name;
+    ", new Dictionary<string, object>
+    {
+        { "@name", keywordName }
+    });
+
+        return v != null;
+    }
+    public int InsertKeyword(string keywordName)
+    {
+        object v = ExecuteScalar(@"
+        INSERT INTO TableKeyword (KeywordName)
+        VALUES (@name);
+        SELECT CAST(SCOPE_IDENTITY() AS INT);
+    ", new Dictionary<string, object>
+    {
+        { "@name", keywordName }
+    });
+
+        int newId = Convert.ToInt32(v);
+
+        // 🔥 Tăng version vì đã thay đổi keyword
+        IncreaseKeywordVersion();
+
+        return newId;
+    }
+    public void UpdateKeyword(int keywordId, string keywordName)
+    {
+        ExecuteNonQuery(@"
+        UPDATE TableKeyword
+        SET KeywordName = @name
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId },
+        { "@name", keywordName }
+    });
+    }
+    public void DeleteKeyword(int keywordId)
+    {
+        ExecuteNonQuery(@"
+        DELETE FROM TableKeyword
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+    }
+    public void DeleteKeywordFull(int keywordId)
+    {
+        // 1. Xoá mapping Topic
+        ExecuteNonQuery(@"
+        DELETE FROM TableTopicKey
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        // 2. Xoá điểm theo dõi
+        ExecuteNonQuery(@"
+        DELETE FROM TableAttentionKeywordScore
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        // 3. Xoá điểm tiêu cực
+        ExecuteNonQuery(@"
+        DELETE FROM TableNegativeKeywordScore
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        // 4. Cuối cùng mới xoá Keyword
+        ExecuteNonQuery(@"
+        DELETE FROM TableKeyword
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+        // 🔥 keyword thay đổi → tăng version
+        IncreaseKeywordVersion();
+    }
+    public int EnsureKeyword(string keywordName)
+    {
+        object v = ExecuteScalar(@"
+        SELECT KeywordId
+        FROM TableKeyword
+        WHERE KeywordName = @name;
+    ", new Dictionary<string, object>
+        {
+            ["@name"] = keywordName
+        });
+
+        if (v != null)
+            return Convert.ToInt32(v);
+
+        object newId = ExecuteScalar(@"
+        INSERT INTO TableKeyword (KeywordName)
+        VALUES (@name);
+        SELECT CAST(SCOPE_IDENTITY() AS INT);
+    ", new Dictionary<string, object>
+        {
+            ["@name"] = keywordName
+        });
+
+        return Convert.ToInt32(newId);
+    }
+
+    //lấy điểm
+    public int? GetAttentionScoreByKeywordId(int keywordId)
+    {
+        const string sql = @"
+        SELECT Score
+        FROM TableAttentionKeywordScore
+        WHERE KeywordId = @id;
+    ";
+
+        object v = ExecuteScalar(sql, new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        if (v == null || v == DBNull.Value)
+            return null;
+
+        return Convert.ToInt32(v);
+    }
+    public int? GetNegativeScoreByKeywordId(int keywordId)
+    {
+        const string sql = @"
+        SELECT Score
+        FROM TableNegativeKeywordScore
+        WHERE KeywordId = @id;
+    ";
+
+        object v = ExecuteScalar(sql, new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        if (v == null || v == DBNull.Value)
+            return null;
+
+        return Convert.ToInt32(v);
+    }
+    // lấy topic ID
+    public int? GetTopicIdByKeywordId(int keywordId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT TOP 1 TopicId
+        FROM TableTopicKey
+        WHERE KeywordId = @kid;
+    ", new Dictionary<string, object>
+    {
+        { "@kid", keywordId }
+    });
+
+        if (v == null || v == DBNull.Value)
+            return null;
+
+        return Convert.ToInt32(v);
+    }
+    public List<TopicDTO> GetAllTopic()
+    {
+        string sql = @"
+        SELECT TopicId, TopicName
+        FROM TableTopic
+        ORDER BY TopicName;
+    ";
+
+        return QueryList(sql, rd => new TopicDTO
+        {
+            TopicId = Convert.ToInt32(rd["TopicId"]),
+            TopicName = rd["TopicName"].ToString()
+        });
+    }
+    public TopicDTO GetTopicById(int topicId)
+    {
+        string sql = @"
+        SELECT TopicId, TopicName
+        FROM TableTopic
+        WHERE TopicId = @id;
+    ";
+
+        var list = QueryList(
+     sql,
+     rd => new TopicDTO
+     {
+         TopicId = Convert.ToInt32(rd["TopicId"]),
+         TopicName = rd["TopicName"].ToString()
+     },
+     new Dictionary<string, object>
+     {
+        { "@id", topicId }
+     }
+ );
+
+        return list.FirstOrDefault();
+
+    }
+    public TopicDTO GetTopicByName(string topicName)
+    {
+        string sql = @"
+        SELECT TopicId, TopicName
+        FROM TableTopic
+        WHERE TopicName = @name;
+    ";
+
+        var list = QueryList(
+            sql,
+            rd => new TopicDTO
+            {
+                TopicId = Convert.ToInt32(rd["TopicId"]),
+                TopicName = rd["TopicName"].ToString()
+            },
+            new Dictionary<string, object>
+            {
+            { "@name", topicName }
+            }
+        );
+
+        return list.FirstOrDefault();
+    }
+    public List<TopicDTO> GetTopicsByKeywordId(int keywordId)
+    {
+        string sql = @"
+        SELECT t.TopicId, t.TopicName
+        FROM TableTopicKey tk
+        JOIN TableTopic t ON tk.TopicId = t.TopicId
+        WHERE tk.KeywordId = @kid;
+    ";
+
+        return QueryList(
+            sql,
+            rd => new TopicDTO
+            {
+                TopicId = Convert.ToInt32(rd["TopicId"]),
+                TopicName = rd["TopicName"].ToString()
+            },
+            new Dictionary<string, object>
+            {
+            { "@kid", keywordId }
+            }
+        );
+    }
+    public int CountKeywordInTopic(int topicId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT COUNT(*)
+        FROM TableTopicKey
+        WHERE TopicId = @tid;
+    ", new Dictionary<string, object>
+    {
+        { "@tid", topicId }
+    });
+
+        return v == null ? 0 : Convert.ToInt32(v);
+    }
+    public int InsertTopic(string topicName)
+    {
+        object v = ExecuteScalar(@"
+        INSERT INTO TableTopic (TopicName)
+        VALUES (@name);
+        SELECT CAST(SCOPE_IDENTITY() AS INT);
+    ", new Dictionary<string, object>
+    {
+        { "@name", topicName }
+    });
+
+        return Convert.ToInt32(v);
+    }
+    public bool TopicExists(string topicName)
+    {
+        object v = ExecuteScalar(@"
+        SELECT 1
+        FROM TableTopic
+        WHERE TopicName = @name;
+    ", new Dictionary<string, object>
+    {
+        { "@name", topicName }
+    });
+
+        return v != null;
+    }
+    public void UpdateTopic(int topicId, string topicName)
+    {
+        ExecuteNonQuery(@"
+        UPDATE TableTopic
+        SET TopicName = @name
+        WHERE TopicId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", topicId },
+        { "@name", topicName }
+    });
+    }
+    public void DeleteTopicFull(int topicId)
+    {
+        // 1. Xoá mapping Topic - Keyword
+        SQLDAO.Instance.ExecuteNonQuery(@"
+        DELETE FROM TableTopicKey
+        WHERE TopicId = @tid;
+    ", new Dictionary<string, object>
+    {
+        { "@tid", topicId }
+    });
+
+        // 2. Xoá Topic
+        SQLDAO.Instance.ExecuteNonQuery(@"
+        DELETE FROM TableTopic
+        WHERE TopicId = @tid;
+    ", new Dictionary<string, object>
+    {
+        { "@tid", topicId }
+    });
+    }
+    public bool TopicKeywordExists(int topicId, int keywordId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT 1
+        FROM TableTopicKey
+        WHERE TopicId = @t AND KeywordId = @k;
+    ", new Dictionary<string, object>
+    {
+        { "@t", topicId },
+        { "@k", keywordId }
+    });
+
+        return v != null;
+    }
+    public void InsertTopicKeyword(int topicId, int keywordId)
+    {
+        ExecuteNonQuery(@"
+        IF NOT EXISTS (
+            SELECT 1 FROM TableTopicKey
+            WHERE TopicId = @t AND KeywordId = @k
+        )
+        INSERT INTO TableTopicKey (TopicId, KeywordId)
+        VALUES (@t, @k);
+    ", new Dictionary<string, object>
+    {
+        { "@t", topicId },
+        { "@k", keywordId }
+    });
+    }
+    public void DeleteTopicKeyword(int topicId, int keywordId)
+    {
+        ExecuteNonQuery(@"
+        DELETE FROM TableTopicKey
+        WHERE TopicId = @t AND KeywordId = @k;
+    ", new Dictionary<string, object>
+    {
+        { "@t", topicId },
+        { "@k", keywordId }
+    });
+    }
+    public int CountTopicByKeywordId(int keywordId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT COUNT(*)
+        FROM TableTopicKey
+        WHERE KeywordId = @kid;
+    ", new Dictionary<string, object>
+    {
+        { "@kid", keywordId }
+    });
+
+        return v == null ? 0 : Convert.ToInt32(v);
+    }
+    public bool AddTopicIfNotExists(string topicName)
+    {
+        string sql = @"
+        IF NOT EXISTS (
+            SELECT 1 FROM TableTopic WHERE TopicName = @name
+        )
+        BEGIN
+            INSERT INTO TableTopic (TopicName)
+            VALUES (@name)
+            SELECT 1
+        END
+        ELSE
+            SELECT 0
+        ";
+
+                int result = Convert.ToInt32(
+                    ExecuteScalar(sql, new Dictionary<string, object>
+                    {
+                        ["@name"] = topicName
+                    })
+                );
+
+                return result == 1;
+    }
+    public int EnsureTopic(string topicName)
+    {
+        object v = ExecuteScalar(@"
+        SELECT TopicId
+        FROM TableTopic
+        WHERE TopicName = @name;
+    ", new Dictionary<string, object>
+        {
+            ["@name"] = topicName
+        });
+
+        if (v != null)
+            return Convert.ToInt32(v);
+
+        object newId = ExecuteScalar(@"
+        INSERT INTO TableTopic (TopicName)
+        VALUES (@name);
+        SELECT CAST(SCOPE_IDENTITY() AS INT);
+    ", new Dictionary<string, object>
+        {
+            ["@name"] = topicName
+        });
+
+        return Convert.ToInt32(newId);
+    }
+
+
+    // đánh giá keyword
+    
+    public bool AddKeywordToTopic(int keywordId, int topicId)
+    {
+        string sql = @"
+        IF NOT EXISTS (
+            SELECT 1 FROM TableTopicKey
+            WHERE KeywordId = @kid AND TopicId = @tid
+        )
+        BEGIN
+            INSERT INTO TableTopicKey (TopicId, KeywordId)
+            VALUES (@tid, @kid)
+            SELECT 1
+        END
+        ELSE
+            SELECT 0
+    ";
+
+        int result = Convert.ToInt32(
+            ExecuteScalar(sql, new Dictionary<string, object>
+            {
+                ["@kid"] = keywordId,
+                ["@tid"] = topicId
+            })
+        );
+
+        return result == 1; // true = đã thêm
+    }
+    public DataTable GetAllKeywordTopic()
+    {
+        return ExecuteQuery(@"
+        SELECT 
+            tk.TopicId,
+            t.TopicName,
+            k.KeywordId,
+            k.KeywordName
+        FROM TableTopicKey tk
+        JOIN TableTopic t ON tk.TopicId = t.TopicId
+        JOIN TableKeyword k ON tk.KeywordId = k.KeywordId
+    ");
+    }
+    // add keyword cơ bản, k thêm điểm
+    public bool AddKeywordIfNotExists(string keywordName, out int keywordId)
+    {
+        keywordId = 0;
+
+        if (string.IsNullOrWhiteSpace(keywordName))
+            return false;
+
+        // 1. Kiểm tra tồn tại
+        object exist = ExecuteScalar(
+            "SELECT KeywordId FROM TableKeyword WHERE KeywordName = @name",
+            new Dictionary<string, object>
+            {
+                ["@name"] = keywordName.Trim()
+            });
+
+        if (exist != null)
+        {
+            keywordId = Convert.ToInt32(exist);
+            return false; // đã tồn tại
+        }
+
+        // 2. Insert keyword
+        keywordId = Convert.ToInt32(
+            ExecuteScalar(@"
+            INSERT INTO TableKeyword (KeywordName)
+            VALUES (@name);
+            SELECT SCOPE_IDENTITY();
+        ",
+            new Dictionary<string, object>
+            {
+                ["@name"] = keywordName.Trim()
+            })
+        );
+
+        return true; // thêm mới
+    }
+
+    public bool IsKeywordInTopic(int keywordId, int topicId)
+    {
+        string sql = @"
+        SELECT COUNT(1)
+        FROM TableTopicKey
+        WHERE KeywordId = @kid AND TopicId = @tid
+    ";
+
+        int count = Convert.ToInt32(
+            ExecuteScalar(sql, new Dictionary<string, object>
+            {
+                ["@kid"] = keywordId,
+                ["@tid"] = topicId
+            }) ?? 0
+        );
+
+        return count > 0;
+    }
+    public List<KeywordViewModel> GetKeywordsByTopic(int topicId)
+    {
+        var excludedIds = AnalyzeSQLDAO.Instance.GetExcludedKeywordIds();
+
+        string sql = @"
+        SELECT k.KeywordId,
+               k.KeywordName,
+               ISNULL(a.Score, 0) AS AttentionScore,
+               ISNULL(n.Score, 0) AS NegativeScore
+        FROM TableKeyword k
+        INNER JOIN TableTopicKey tk
+            ON k.KeywordId = tk.KeywordId
+        LEFT JOIN TableAttentionKeywordScore a
+            ON a.KeywordId = k.KeywordId
+        LEFT JOIN TableNegativeKeywordScore n
+            ON n.KeywordId = k.KeywordId
+        WHERE tk.TopicId = @tid
+        ORDER BY k.KeywordName
+    ";
+
+        return QueryList(sql, rd =>
+        {
+            int kid = Convert.ToInt32(rd["KeywordId"]);
+
+            return new KeywordViewModel
+            {
+                KeywordId = kid,
+                KeywordName = rd["KeywordName"].ToString(),
+                AttentionScore = Convert.ToInt32(rd["AttentionScore"]),
+                NegativeScore = Convert.ToInt32(rd["NegativeScore"]),
+                IsExcluded = excludedIds.Contains(kid),   // 🔥 QUAN TRỌNG
+                Select = false
+            };
+        },
+        new Dictionary<string, object>
+        {
+            ["@tid"] = topicId
+        });
+    }
+
+    //Negative
+    public bool NegativeKeywordScoreExists(int keywordId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT 1
+        FROM TableNegativeKeywordScore
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        return v != null;
+    }
+    public void InsertNegativeKeywordScore(int keywordId,int score,int negativeLevel,bool isCritical,string note = null)
+    {
+        ExecuteNonQuery(@"
+        INSERT INTO TableNegativeKeywordScore
+            (KeywordId, Score, NegativeLevel, IsCritical, Note)
+        VALUES
+            (@id, @score, @level, @critical, @note);
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId },
+        { "@score", score },
+        { "@level", negativeLevel },
+        { "@critical", isCritical },
+        { "@note", (object)note ?? DBNull.Value }
+    });
+    }
+    public void UpdateNegativeKeywordScore(int keywordId,int score,int negativeLevel,bool isCritical,string note = null)
+    {
+        ExecuteNonQuery(@"
+        UPDATE TableNegativeKeywordScore
+        SET Score = @score,
+            NegativeLevel = @level,
+            IsCritical = @critical,
+            Note = @note
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId },
+        { "@score", score },
+        { "@level", negativeLevel },
+        { "@critical", isCritical },
+        { "@note", (object)note ?? DBNull.Value }
+    });
+    }
+
+    public void DeleteNegativeKeywordScore(int keywordId)
+    {
+        ExecuteNonQuery(@"
+        DELETE FROM TableNegativeKeywordScore
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+    }
+    public void SaveNegativeKeywordScore(int keywordId,int score, int negativeLevel,bool isCritical, string note = null)
+    {
+        if (NegativeKeywordScoreExists(keywordId))
+            UpdateNegativeKeywordScore(keywordId, score, negativeLevel, isCritical, note);
+        else
+            InsertNegativeKeywordScore(keywordId, score, negativeLevel, isCritical, note);
+    }
+    public bool UpsertNegativeScore(int keywordId, int score,int negativeLevel,bool isCritical,string note = null)
+    {
+        int rows = ExecuteNonQuery(@"
+        MERGE TableNegativeKeywordScore AS t
+        USING (SELECT @KeywordId AS KeywordId) s
+        ON t.KeywordId = s.KeywordId
+        WHEN MATCHED THEN
+            UPDATE SET
+                Score = @Score,
+                NegativeLevel = @Level,
+                IsCritical = @Critical,
+                Note = @Note
+        WHEN NOT MATCHED THEN
+            INSERT (KeywordId, Score, NegativeLevel, IsCritical, Note)
+            VALUES (@KeywordId, @Score, @Level, @Critical, @Note);
+    ", new Dictionary<string, object>
+    {
+        { "@KeywordId", keywordId },
+        { "@Score", score },
+        { "@Level", negativeLevel },
+        { "@Critical", isCritical },
+        { "@Note", (object)note ?? DBNull.Value }
+    });
+
+        if (rows > 0)
+        {
+            // 🔥 có thay đổi → tăng version
+            IncreaseKeywordVersion();
+            return true;
+        }
+
+        return false;
+    }
+    public int? GetTrackingLevelByKeywordId(int keywordId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT TrackingLevel
+        FROM TableAttentionKeywordScore
+        WHERE KeywordId = @id
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        if (v == null || v == DBNull.Value)
+            return null;
+
+        return Convert.ToInt32(v);
+    }
+    public int? GetNegativeLevelByKeywordId(int keywordId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT NegativeLevel
+        FROM TableNegativeKeywordScore
+        WHERE KeywordId = @id
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        if (v == null || v == DBNull.Value)
+            return null;
+
+        return Convert.ToInt32(v);
+    }
+
+    //TableAttentionKeywordScore
+    public bool AttentionKeywordScoreExists(int keywordId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT 1
+        FROM TableAttentionKeywordScore
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+
+        return v != null;
+    }
+    public void InsertAttentionKeywordScore(int keywordId,int score,int trackingLevel,string note = null)
+    {
+        ExecuteNonQuery(@"
+        INSERT INTO TableAttentionKeywordScore
+            (KeywordId, Score, TrackingLevel, Note)
+        VALUES
+            (@id, @score, @level, @note);
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId },
+        { "@score", score },
+        { "@level", trackingLevel },
+        { "@note", (object)note ?? DBNull.Value }
+    });
+    }
+    public void UpdateAttentionKeywordScore(int keywordId, int score,int trackingLevel,string note = null)
+    {
+        ExecuteNonQuery(@"
+        UPDATE TableAttentionKeywordScore
+        SET Score = @score,
+            TrackingLevel = @level,
+            Note = @note
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId },
+        { "@score", score },
+        { "@level", trackingLevel },
+        { "@note", (object)note ?? DBNull.Value }
+    });
+    }
+
+    public void DeleteAttentionKeywordScore(int keywordId)
+    {
+        ExecuteNonQuery(@"
+        DELETE FROM TableAttentionKeywordScore
+        WHERE KeywordId = @id;
+    ", new Dictionary<string, object>
+    {
+        { "@id", keywordId }
+    });
+    }
+    public void SaveAttentionKeywordScore(int keywordId,int score,int trackingLevel,string note = null)
+    {
+        if (AttentionKeywordScoreExists(keywordId))
+            UpdateAttentionKeywordScore(keywordId, score, trackingLevel, note);
+        else
+            InsertAttentionKeywordScore(keywordId, score, trackingLevel, note);
+    }
+    //-===mới
+    public bool UpsertAttentionScore(int keywordId,int score,int trackingLevel,string note = null)
+    {
+        int rows = ExecuteNonQuery(@"
+        MERGE TableAttentionKeywordScore AS t
+        USING (SELECT @KeywordId AS KeywordId) s
+        ON t.KeywordId = s.KeywordId
+        WHEN MATCHED THEN
+            UPDATE SET 
+                Score = @Score,
+                TrackingLevel = @Level,
+                Note = @Note
+        WHEN NOT MATCHED THEN
+            INSERT (KeywordId, Score, TrackingLevel, Note)
+            VALUES (@KeywordId, @Score, @Level, @Note);
+    ", new Dictionary<string, object>
+    {
+        { "@KeywordId", keywordId },
+        { "@Score", score },
+        { "@Level", trackingLevel },
+        { "@Note", (object)note ?? DBNull.Value }
+    });
+
+        if (rows > 0)
+        {
+            // 🔥 có thay đổi → tăng version
+            IncreaseKeywordVersion();
+            return true;
+        }
+
+        return false;
+    }
+    // group loại trừ
+    public void InsertOrUpdateExcludeKeyword(
+     int keywordId,
+     int? level,
+     string note = null)
+    {
+        int safeLevel = level.HasValue && level.Value >= 1 && level.Value <= 7
+            ? level.Value
+            : 1;
+
+        ExecuteNonQuery(@"
+        IF EXISTS (
+            SELECT 1 FROM TableExcludeKeyword WHERE KeywordId = @KeywordId
+        )
+        BEGIN
+            UPDATE TableExcludeKeyword
+            SET Level = @Level,
+                Note = @Note
+            WHERE KeywordId = @KeywordId
+        END
+        ELSE
+        BEGIN
+            INSERT INTO TableExcludeKeyword (KeywordId, Level, Note)
+            VALUES (@KeywordId, @Level, @Note)
+        END
+    ", new Dictionary<string, object>
+    {
+        { "@KeywordId", keywordId },
+        { "@Level", safeLevel },
+        { "@Note", (object)note ?? DBNull.Value }
+    });
+    }
+
+   
+    public bool UpsertExcludeKeyword(
+    int keywordId,
+    int? level,
+    string note = null)
+    {
+        int safeLevel = level.HasValue && level.Value >= 1 && level.Value <= 7
+            ? level.Value
+            : 1;
+
+        int rows = ExecuteNonQuery(@"
+        IF EXISTS (
+            SELECT 1 FROM TableExcludeKeyword WHERE KeywordId = @KeywordId
+        )
+        BEGIN
+            UPDATE TableExcludeKeyword
+            SET Level = @Level,
+                Note = @Note
+            WHERE KeywordId = @KeywordId
+        END
+        ELSE
+        BEGIN
+            INSERT INTO TableExcludeKeyword (KeywordId, Level, Note)
+            VALUES (@KeywordId, @Level, @Note)
+        END
+    ", new Dictionary<string, object>
+    {
+        { "@KeywordId", keywordId },
+        { "@Level", safeLevel },
+        { "@Note", (object)note ?? DBNull.Value }
+    });
+
+        if (rows > 0)
+        {
+            IncreaseKeywordVersion();
+            return true;
+        }
+
+        return false;
+    }
+   
+  
+    // cũng là lấy post phục vụ gán topic
+    public DataTable GetAllPosts()
+    {
+        return ExecuteQuery(
+            "SELECT PostID, PostContent FROM TablePostInfo"
+        );
+    }
+    public DataTable GetPostsWithoutTopic()
+    {
+        return ExecuteQuery(@"
+        SELECT PostID, PostContent
+        FROM TablePostInfo
+        WHERE PostID NOT IN (
+            SELECT DISTINCT PostId FROM TableTopicPost
+        )");
+    }
+    public void ClearAllTopicPost()
+    {
+        ExecuteNonQuery("DELETE FROM TableTopicPost");
+    }
+    public bool TopicPostExists(int topicId, string postId)
+    {
+        object v = ExecuteScalar(@"
+        SELECT 1 FROM TableTopicPost
+        WHERE TopicId=@t AND PostId=@p",
+            new Dictionary<string, object>
+            {
+                ["@t"] = topicId,
+                ["@p"] = postId
+            });
+
+        return v != null;
+    }
+    public void InsertTopicPost(int topicId, string postId)
+    {
+        ExecuteNonQuery(@"
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM TableTopicPost
+            WHERE TopicId = @t AND PostId = @p
+        )
+        INSERT INTO TableTopicPost (TopicId, PostId, CreatedTime)
+        VALUES (@t, @p, GETDATE())
+    ",
+        new Dictionary<string, object>
+        {
+            ["@t"] = topicId,
+            ["@p"] = postId
+        });
+    }
+    public DataTable GetPostTopicForView()
+    {
+            return ExecuteQuery(@"
+          SELECT 
+            tp.PostId,
+            t.TopicName,
+            p.PostContent,
+
+            -- 🔥 PHẢI alias RÕ
+            p.RealPostTime AS RealPostTime,
+
+            tp.CreatedTime AS ConvertTime
+        FROM TableTopicPost tp
+        JOIN TablePostInfo p ON tp.PostId = p.PostID
+        JOIN TableTopic t ON tp.TopicId = t.TopicId
+        ORDER BY tp.CreatedTime DESC;
+
+
+    ");
+    }
+    //V. Verson keyword
+    public int GetKeywordVersion()
+    {
+        try
+        {
+            using (var conn = OpenConnection())
+            {
+                string sql = "SELECT CurrentVersion FROM TableKeywordVersion WHERE Id = 1";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    object result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToInt32(result) : 1;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ GetKeywordVersion error: " + ex.Message);
+            return 1;
+        }
+    }
+    public void IncreaseKeywordVersion()
+    {
+        ExecuteNonQuery(@"
+        UPDATE TableKeywordVersion
+        SET CurrentVersion = CurrentVersion + 1,
+            LastUpdated = SYSDATETIME()
+        WHERE Id = 1
+    ");
+    }
+    
 }

@@ -31,7 +31,9 @@ namespace CrawlFB_PW._1._0.Helper.UI
 
                 PosterName = vm.PosterName,
                 PosterLink = vm.PosterLink,
-                PosterNote = vm.PosterNote
+                PosterNote = vm.PosterNote,
+                PosterIdFB = vm.PosterIdFB,
+                ContainerIdFB = vm.ContainerIdFB
             };
         }
     }

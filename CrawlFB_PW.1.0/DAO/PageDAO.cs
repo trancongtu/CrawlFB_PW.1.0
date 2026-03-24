@@ -686,12 +686,12 @@ namespace CrawlFB_PW._1._0.DAO
             }
 
             // nhận diện KOL
-            var kol = await tab.QuerySelectorAsync("span:has-text('Người sáng tạo nội dung số')");
-            if (kol != null)
-            {
-                isKOL = true;
-                Libary.Instance.LogDebug("[CheckFBType] 🟩 KOL DETECTED");
-            }
+           // var kol = await tab.QuerySelectorAsync("span:has-text('Người sáng tạo nội dung số')");
+           // if (kol != null)
+           // {
+           //     isKOL = true;
+           //     Libary.Instance.LogDebug("[CheckFBType] 🟩 KOL DETECTED");
+           // }
 
             // ============================================================
             // 5. CHỐT KẾT QUẢ

@@ -211,8 +211,7 @@ namespace CrawlFB_PW._1._0.DAO.Post
                         var (posterName, rawPosterLink) =
                             await ExtractCommentPosterAsync(node);
 
-                        string commentId =
-                            ExtractCommentIdFromLink(rawPosterLink);
+                        string commentId = ExtractCommentIdFromLink(rawPosterLink);
 
                         if (string.IsNullOrWhiteSpace(commentId))
                             continue;

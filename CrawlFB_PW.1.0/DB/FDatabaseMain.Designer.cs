@@ -83,6 +83,7 @@
             this.ACEPageAll.Name = "ACEPageAll";
             this.ACEPageAll.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
             this.ACEPageAll.Text = "Tổng Hội nhóm";
+            this.ACEPageAll.Click += new System.EventHandler(this.ACEPageAll_Click);
             // 
             // ACEPageNote
             // 

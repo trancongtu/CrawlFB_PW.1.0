@@ -103,6 +103,15 @@
     <Reference Include="Microsoft.Playwright, Version=1.55.0.0, Culture=neutral, PublicKeyToken=db12f80f85d8ba23, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Playwright.1.55.0\lib\netstandard2.0\Microsoft.Playwright.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.3800.47, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3800.47\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.WinForms, Version=1.0.3800.47, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3800.47\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Wpf, Version=1.0.3800.47, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3800.47\lib\net462\Microsoft.Web.WebView2.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -209,14 +218,71 @@
       <DependentUpon>FTopic.cs</DependentUpon>
     </Compile>
     <Compile Include="AppConfig.cs" />
+    <Compile Include="Auto\FAddPageAuto.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Auto\FAddPageAuto.Designer.cs">
+      <DependentUpon>FAddPageAuto.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Auto\FAutoCrawlPageMonitor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Auto\FAutoCrawlPageMonitor.Designer.cs">
+      <DependentUpon>FAutoCrawlPageMonitor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Check\DOMCheck.cs" />
+    <Compile Include="Check\DomCrawlerTester.cs" />
+    <Compile Include="Check\FCheckDOM.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Check\FCheckDOM.Designer.cs">
+      <DependentUpon>FCheckDOM.cs</DependentUpon>
+    </Compile>
     <Compile Include="DAO\AdsPower\AdsPowerHelper.cs" />
     <Compile Include="DAO\AdsPower\AdsPowerPlaywrightManager.cs" />
     <Compile Include="DAO\AutoDAO.cs" />
+    <Compile Include="DAO\Auto\AutoPageDAO.cs" />
     <Compile Include="DAO\CrawlBaseDAO.cs" />
     <Compile Include="DAO\CrawlPostReelDAO.cs" />
+    <Compile Include="DAO\KeywordDAO.cs" />
     <Compile Include="DAO\Page\FirstScanPostPageDAO.cs" />
     <Compile Include="DAO\Person\CrawlPostPersonDAO.cs" />
     <Compile Include="DAO\DatabaseDAO.cs" />
+    <Compile Include="DAO\phantich\AnalyzeSQLDAO.cs" />
+    <Compile Include="Dashbroad\FPostDashboardHTML.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Dashbroad\FPostDashboardHTML.Designer.cs">
+      <DependentUpon>FPostDashboardHTML.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DTO\PostInfo.cs" />
+    <Compile Include="Helper\dashbroad\PostHtmlBuilder.cs" />
+    <Compile Include="Helper\Log\TestLogHelper.cs" />
+    <Compile Include="Helper\Mapper\PostMapper.cs" />
+    <Compile Include="Page\FSelectPageUpdate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Page\FSelectPageUpdate.Designer.cs">
+      <DependentUpon>FSelectPageUpdate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="phantich\FcheckkeywordPost.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="phantich\FcheckkeywordPost.Designer.cs">
+      <DependentUpon>FcheckkeywordPost.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DAO\phantich\PostAnalyzeDAO.cs" />
+    <Compile Include="DAO\Post\SharePostDAO.cs" />
+    <Compile Include="DAO\TopicDAO.cs" />
+    <Compile Include="DTO\KeywordDTO.cs" />
+    <Compile Include="DTO\PostEvaluationDTO.cs" />
+    <Compile Include="DTO\TopicDTO.cs" />
+    <Compile Include="FTestRule.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FTestRule.Designer.cs">
+      <DependentUpon>FTestRule.cs</DependentUpon>
+    </Compile>
     <Compile Include="Helper\AttachmentHelper.cs" />
     <Compile Include="Helper\ExcellHelper.cs" />
     <Compile Include="DAO\Page\FindPageDAO.cs" />
@@ -226,6 +292,7 @@
     <Compile Include="DAO\Profile\ManagerProfileDAO.cs" />
     <Compile Include="DAO\PageDAO.cs" />
     <Compile Include="DAO\Page\CrawlPageDAO.cs" />
+    <Compile Include="Helper\ExcelTemplateHelper.cs" />
     <Compile Include="Helper\PathHelper.cs" />
     <Compile Include="DAO\Post\PostCategoryDAO.cs" />
     <Compile Include="DAO\Comment\BasePostCommentDAO.cs" />
@@ -238,7 +305,10 @@
     <Compile Include="DAO\Page\ScanCheckPageDAO.cs" />
     <Compile Include="DAO\SQLDAO.cs" />
     <Compile Include="Helper\SqliteHelper.cs" />
-    <Compile Include="Helper\TextSimilarity.cs" />
+    <Compile Include="Helper\Text\SosanhChuoi.cs" />
+    <Compile Include="Helper\Text\TextSimilarity.cs" />
+    <Compile Include="Helper\Text\TextNormalizeHelper.cs" />
+    <Compile Include="Helper\UI\UIHelper.cs" />
     <Compile Include="Helper\UI\UIStyleHelper.cs" />
     <Compile Include="DAO\Page\UpdatePostPageDAO.cs" />
     <Compile Include="DB\FDatabaseMain.cs">
@@ -270,12 +340,6 @@
     <Compile Include="DTO\ProfileInfo.cs" />
     <Compile Include="DTO\ShareItem.cs" />
     <Compile Include="Enums\EnumMain.cs" />
-    <Compile Include="FTestPhantich.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FTestPhantich.Designer.cs">
-      <DependentUpon>FTestPhantich.cs</DependentUpon>
-    </Compile>
     <Compile Include="Helper\UI\AcordingStyleHelper.cs" />
     <Compile Include="Helper\ExcellHeper.cs" />
     <Compile Include="Helper\JsonHelper.cs" />
@@ -289,6 +353,24 @@
     <Compile Include="Helper\UI\UIPagerBarHelper.cs" />
     <Compile Include="Helper\UI\UIPostGridHelper.cs" />
     <Compile Include="Helper\UrlHelper.cs" />
+    <Compile Include="KeyWord\FAddKeyword.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="KeyWord\FAddKeyword.Designer.cs">
+      <DependentUpon>FAddKeyword.cs</DependentUpon>
+    </Compile>
+    <Compile Include="KeyWord\FAddTemplateTopicAndKey.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="KeyWord\FAddTemplateTopicAndKey.Designer.cs">
+      <DependentUpon>FAddTemplateTopicAndKey.cs</DependentUpon>
+    </Compile>
+    <Compile Include="KeyWord\FViewKeyWord.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="KeyWord\FViewKeyWord.Designer.cs">
+      <DependentUpon>FViewKeyWord.cs</DependentUpon>
+    </Compile>
     <Compile Include="Page\FAddPagecs.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -331,10 +413,10 @@
     <Compile Include="Page\FViewPagePro.Designer.cs">
       <DependentUpon>FViewPagePro.cs</DependentUpon>
     </Compile>
-    <Compile Include="Page\PopupAuto.cs">
+    <Compile Include="Auto\PopupAuto.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Page\PopupAuto.Designer.cs">
+    <Compile Include="Auto\PopupAuto.Designer.cs">
       <DependentUpon>PopupAuto.cs</DependentUpon>
     </Compile>
     <Compile Include="Page\ProfileStartup.cs">
@@ -355,10 +437,10 @@
     <Compile Include="FormTest.Designer.cs">
       <DependentUpon>FormTest.cs</DependentUpon>
     </Compile>
-    <Compile Include="Page\FAutoSupervisePage.cs">
+    <Compile Include="Auto\FAutoSupervisePage.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Page\FAutoSupervisePage.Designer.cs">
+    <Compile Include="Auto\FAutoSupervisePage.Designer.cs">
       <DependentUpon>FAutoSupervisePage.cs</DependentUpon>
     </Compile>
     <Compile Include="Page\FScanPostPage.cs">
@@ -378,6 +460,18 @@
     </Compile>
     <Compile Include="Person\FCawrlPostPerson.Designer.cs">
       <DependentUpon>FCawrlPostPerson.cs</DependentUpon>
+    </Compile>
+    <Compile Include="phantich\fphantichpost.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="phantich\fphantichpost.Designer.cs">
+      <DependentUpon>fphantichpost.cs</DependentUpon>
+    </Compile>
+    <Compile Include="phantich\FSetupAnalyze.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="phantich\FSetupAnalyze.Designer.cs">
+      <DependentUpon>FSetupAnalyze.cs</DependentUpon>
     </Compile>
     <Compile Include="Post\FscanCommenPostFull.cs">
       <SubType>Form</SubType>
@@ -424,6 +518,66 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Service\PageDistributionService.cs" />
+    <Compile Include="Share\FCrawlPostShare.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Share\FCrawlPostShare.Designer.cs">
+      <DependentUpon>FCrawlPostShare.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Share\FShareComments.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Share\FShareComments.Designer.cs">
+      <DependentUpon>FShareComments.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Topic\FAddTopic.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Topic\FAddTopic.Designer.cs">
+      <DependentUpon>FAddTopic.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Topic\FCheckKeywordOnPost.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Topic\FCheckKeywordOnPost.Designer.cs">
+      <DependentUpon>FCheckKeywordOnPost.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Topic\FConvertTopic.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Topic\FConvertTopic.Designer.cs">
+      <DependentUpon>FConvertTopic.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Topic\FSelectTopic.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Topic\FSelectTopic.Designer.cs">
+      <DependentUpon>FSelectTopic.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Topic\FTopicView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Topic\FTopicView.Designer.cs">
+      <DependentUpon>FTopicView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Topic\FUpdateTopic.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Topic\FUpdateTopic.Designer.cs">
+      <DependentUpon>FUpdateTopic.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UC\phantich\UCAddAttentionGroup.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UC\phantich\UCAddAttentionGroup.Designer.cs">
+      <DependentUpon>UCAddAttentionGroup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UC\phantich\UCViewAnalyzeNegative.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UC\phantich\UCViewAnalyzeNegative.Designer.cs">
+      <DependentUpon>UCViewAnalyzeNegative.cs</DependentUpon>
+    </Compile>
     <Compile Include="UC\UCPageDB.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -445,13 +599,48 @@
     <Compile Include="ViewModels\AttachmentRaw.cs" />
     <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="ViewModels\CommentGridRow.cs" />
+    <Compile Include="ViewModels\DOM\DOMSelectorModel.cs" />
+    <Compile Include="ViewModels\Keyword\KeywordFilterModel.cs" />
+    <Compile Include="ViewModels\Keyword\KeywordMatchDTO.cs" />
+    <Compile Include="ViewModels\Keyword\KeywordViewModel.cs" />
+    <Compile Include="ViewModels\PageMonitorViewModel.cs" />
+    <Compile Include="ViewModels\phan tich\NegativeMonitorViewModel.cs" />
     <Compile Include="ViewModels\PageInfoViewModel.cs" />
     <Compile Include="ViewModels\PersonPostVM.cs" />
+    <Compile Include="ViewModels\phan tich\AnalysisResultVM.cs" />
+    <Compile Include="ViewModels\phan tich\AttentionGroupVM.cs" />
+    <Compile Include="ViewModels\phan tich\ClassificationRuleVM.cs" />
+    <Compile Include="ViewModels\phan tich\GroupVM.cs" />
+    <Compile Include="ViewModels\phan tich\NegativeGroupVM.cs" />
+    <Compile Include="ViewModels\phan tich\PostHighlightDTO.cs" />
+    <Compile Include="ViewModels\PostCheckVM.cs" />
     <Compile Include="ViewModels\PostInfoRawVM.cs" />
     <Compile Include="ViewModels\PostInfoViewMode.cs" />
     <Compile Include="ViewModels\PostResult.cs" />
+    <Compile Include="ViewModels\PostTopicViewModel.cs" />
+    <Compile Include="ViewModels\SharePostVM.cs" />
+    <Compile Include="ViewModels\Keyword\TopicKeywordTemplateVM.cs" />
+    <Compile Include="ViewModels\TopicViewModel.cs" />
     <EmbeddedResource Include="Analyzer\FTopic.resx">
       <DependentUpon>FTopic.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Auto\FAddPageAuto.resx">
+      <DependentUpon>FAddPageAuto.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Auto\FAutoCrawlPageMonitor.resx">
+      <DependentUpon>FAutoCrawlPageMonitor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Check\FCheckDOM.resx">
+      <DependentUpon>FCheckDOM.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Dashbroad\FPostDashboardHTML.resx">
+      <DependentUpon>FPostDashboardHTML.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Page\FSelectPageUpdate.resx">
+      <DependentUpon>FSelectPageUpdate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="phantich\FcheckkeywordPost.resx">
+      <DependentUpon>FcheckkeywordPost.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="DB\FDatabaseMain.resx">
       <DependentUpon>FDatabaseMain.cs</DependentUpon>
@@ -462,8 +651,17 @@
     <EmbeddedResource Include="DB\FviewPageGS.resx">
       <DependentUpon>FviewPageGS.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FTestPhantich.resx">
-      <DependentUpon>FTestPhantich.cs</DependentUpon>
+    <EmbeddedResource Include="FTestRule.resx">
+      <DependentUpon>FTestRule.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="KeyWord\FAddKeyword.resx">
+      <DependentUpon>FAddKeyword.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="KeyWord\FAddTemplateTopicAndKey.resx">
+      <DependentUpon>FAddTemplateTopicAndKey.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="KeyWord\FViewKeyWord.resx">
+      <DependentUpon>FViewKeyWord.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Page\FAddPagecs.resx">
       <DependentUpon>FAddPagecs.cs</DependentUpon>
@@ -486,7 +684,7 @@
     <EmbeddedResource Include="Page\FViewPagePro.resx">
       <DependentUpon>FViewPagePro.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Page\PopupAuto.resx">
+    <EmbeddedResource Include="Auto\PopupAuto.resx">
       <DependentUpon>PopupAuto.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Page\ProfileStartup.resx">
@@ -498,7 +696,7 @@
     <EmbeddedResource Include="FormTest.resx">
       <DependentUpon>FormTest.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Page\FAutoSupervisePage.resx">
+    <EmbeddedResource Include="Auto\FAutoSupervisePage.resx">
       <DependentUpon>FAutoSupervisePage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Page\FScanPostPage.resx">
@@ -509,6 +707,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Person\FCawrlPostPerson.resx">
       <DependentUpon>FCawrlPostPerson.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="phantich\fphantichpost.resx">
+      <DependentUpon>fphantichpost.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="phantich\FSetupAnalyze.resx">
+      <DependentUpon>FSetupAnalyze.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Post\FscanCommenPostFull.resx">
       <DependentUpon>FscanCommenPostFull.cs</DependentUpon>
@@ -535,6 +739,36 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Share\FCrawlPostShare.resx">
+      <DependentUpon>FCrawlPostShare.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Share\FShareComments.resx">
+      <DependentUpon>FShareComments.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Topic\FAddTopic.resx">
+      <DependentUpon>FAddTopic.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Topic\FCheckKeywordOnPost.resx">
+      <DependentUpon>FCheckKeywordOnPost.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Topic\FConvertTopic.resx">
+      <DependentUpon>FConvertTopic.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Topic\FSelectTopic.resx">
+      <DependentUpon>FSelectTopic.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Topic\FTopicView.resx">
+      <DependentUpon>FTopicView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Topic\FUpdateTopic.resx">
+      <DependentUpon>FUpdateTopic.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UC\phantich\UCAddAttentionGroup.resx">
+      <DependentUpon>UCAddAttentionGroup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UC\phantich\UCViewAnalyzeNegative.resx">
+      <DependentUpon>UCViewAnalyzeNegative.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UC\UCPageDB.resx">
       <DependentUpon>UCPageDB.cs</DependentUpon>
@@ -612,9 +846,11 @@
     <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.props'))" />
     <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.targets'))" />
     <Error Condition="!Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.3800.47\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.3800.47\build\Microsoft.Web.WebView2.targets'))" />
   </Target>
   <Import Project="..\packages\EntityFramework.6.4.4\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" />
   <Import Project="..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets" Condition="Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" />
+  <Import Project="..\packages\Microsoft.Web.WebView2.1.0.3800.47\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.3800.47\build\Microsoft.Web.WebView2.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -27,7 +27,7 @@ namespace CrawlFB_PW._1._0.DAO
         private UpdatePostPageDAO() { }
         
         //===========HÀM CHẠY CHÍNH================
-        public async Task<PostResult> UpdatePostPageAsync( IPage page,string url, string pageId, DateTime? lastPostTime, int maxPosts = 200)
+        public async Task<PostResult> UpdatePostPageAsync( IPage page,string url, string pageId, string pageidFbcrawl, string pagenamecrawl, DateTime? lastPostTime, int maxPosts = 200)
         {
             var result = new PostResult();
             string urlgoc = url;
@@ -80,14 +80,22 @@ namespace CrawlFB_PW._1._0.DAO
                         var node = nodes[i];
 
                         bool isGroup = PageDAO.Instance.IsFacebookGroup(urlgoc);
-                        string pageName = await PageDAO.Instance.GetPageNameAsync(page);
-
+                        if (!ProcessingHelper.IsValidContent(pagenamecrawl))
+                        {
+                            var pageName = await PageDAO.Instance.GetPageNameAsync(page);
+                            if (ProcessingHelper.IsValidContent(pageName))
+                            {
+                                pagenamecrawl = pageName;
+                            }
+                        }
                         PostResult pr = await CrawlPageDAO.Instance.CrawlPagePostAsync(
                               page,
                               node,
-                              pageName,
-                              urlgoc,
-                              isGroup ? CrawlContext.Group : CrawlContext.Fanpage
+                               pagenamecrawl,
+                               urlgoc,
+                              isGroup ? CrawlContext.Group : CrawlContext.Fanpage,
+                              pageId,
+                              pageidFbcrawl                          
                           );
 
 

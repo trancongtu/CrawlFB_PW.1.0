@@ -634,6 +634,8 @@ namespace CrawlFB_PW._1._0.DAO
     string url,
     string knownIdFB = null)
         {
+            if (string.IsNullOrWhiteSpace(url) || url == "N/A")
+                return (FBType.Unknown, null);
             // =========================
             // 0️⃣ ƯU TIÊN IDFB (DB)
             // =========================
@@ -668,6 +670,8 @@ namespace CrawlFB_PW._1._0.DAO
             // =========================
             // 3️⃣ PLAYWRIGHT (CUỐI CÙNG)
             // =========================
+            if (!ProcessingHelper.IsValidContent(url)) return (FBType.Unknown, null);
+            //url k hợp lệ không mở tab
             if (mainPage == null || mainPage.IsClosed)
                 return (FBType.Unknown, "");
 
@@ -704,8 +708,11 @@ namespace CrawlFB_PW._1._0.DAO
                 string.IsNullOrWhiteSpace(link) ||
                 link == "N/A")
                 return FBType.Unknown;
-
-            var (type, _) = await CheckTypeCachedAsync(page, link);
+            // 🔥 Chuẩn hóa link trước
+            link = UrlHelper.ShortenPagePersonLink(link);
+            link = ProcessingHelper.NormalizeInputUrl(link);
+            string idfb = ProcessingHelper.ExtractFacebookId(link);
+            var (type, _) = await CheckTypeCachedAsync(page, link, idfb);
             return type;
         }
 
@@ -920,7 +927,6 @@ namespace CrawlFB_PW._1._0.DAO
 
             IPage newPage = null;
             bool success = false;
-
             try
             {
                 Libary.Instance.LogDebug($"{Libary.IconStart} [ORIGINAL POST] Open original post");
@@ -963,23 +969,26 @@ namespace CrawlFB_PW._1._0.DAO
                 // 5️⃣ PAGE NAME + LINK
                 // ===============================
                 var (pageName, pageLink) = await GetPageContainerFromFeedAsync(postDiv);
-                if (pageLink != "N/A")
+                info.PageName = pageName;
+                info.PageLink = pageLink;
+                // 🔥 Detect bằng link
+                bool isGroup = !string.IsNullOrWhiteSpace(pageLink) &&
+               pageLink.Contains("/groups/");
+
+                if (isGroup)
                 {
-                    info.PageName = pageName;
-                    info.PageLink = pageLink;
-                    Libary.Instance.LogTech($"{Libary.IconOK} [ORIGINAL POST] Lấy pageContainer thành công {info.PageName} link: {info.PageLink}");
-                } 
-                 var (posterName, posterLink) =await GetGroupPosterFromFeedAsync(postDiv);
-                    if (posterLink != "N/A")
+                    var (posterName, posterLink) = await GetGroupPosterFromFeedAsync(postDiv);
+
+                    if (!string.IsNullOrWhiteSpace(posterLink) && posterLink != "N/A")
                     {
                         info.PosterName = posterName;
                         info.PosterLink = posterLink;
-                        info.PosterNote = FBType.GroupOn;
+                        Libary.Instance.LogTech("[ORIGINAL POST] Detect sơ bộ = Group → lấy poster feed");
                     }
+                }
                 else
                 {
-                    info.PosterName = info.PageName;
-                    info.PosterLink = info.PageLink;
+                    Libary.Instance.LogTech("[ORIGINAL POST] Detect sơ bộ = Fanpage/Profile → chưa gán poster, chờ check type");
                 }
                 // ===============================
                 // 6️⃣ CONTENT
@@ -1001,11 +1010,9 @@ namespace CrawlFB_PW._1._0.DAO
                 info.Content = content;
                 // 6️⃣.1 ATTACHMENT (VIDEO / PHOTO)
                 // ===============================
-                var (hasVideo, rawVideoLink, videoTime) =
-                    await CrawlBaseDAO.Instance.DetectVideoFromPostAsync(postDiv);
+                var (hasVideo, rawVideoLink, videoTime) = await CrawlBaseDAO.Instance.DetectVideoFromPostAsync(postDiv);
 
-                List<(string Src, string Alt)> photos =
-                    await CrawlBaseDAO.Instance.DetectPhotosFromPostAsync(postDiv);
+                List<(string Src, string Alt)> photos = await CrawlBaseDAO.Instance.DetectPhotosFromPostAsync(postDiv);
                 if (photos != null && photos.Count > 0)
                 {
                     for (int i = 0; i < photos.Count; i++)
@@ -1017,11 +1024,8 @@ namespace CrawlFB_PW._1._0.DAO
                         }
                     }
                 }
-                info.AttachmentJson = AttachmentHelper.BuildAttachmentJson(
-                hasVideo,
-                ProcessingHelper.NormalizeReelLink(rawVideoLink),
-                videoTime,
-                photos);
+                info.AttachmentJson = AttachmentHelper.BuildAttachmentJson(hasVideo,
+                ProcessingHelper.NormalizeReelLink(rawVideoLink),videoTime,photos);
                 bool hasContent = ProcessingHelper.IsValidContent(info.Content);
 
                 if (photos != null && photos.Count > 0)
@@ -1036,15 +1040,82 @@ namespace CrawlFB_PW._1._0.DAO
                         ? PostType.Page_Normal
                         : PostType.Page_NoConent;
                 }
-
                 // xong xuôi mới chechk type
                 // ===============================
                 // CHECK TYPE SAU KHI ĐÃ LẤY XONG DATA
-                // ===============================
-                info.ContainerType =await CrawlBaseDAO.Instance.TryCheckTypeAsync(mainPage, info.PageLink);
+                // ===============================       
+                var (containerType, idfbContainer) = await CrawlBaseDAO.Instance.TryCheckTypeFullAsync(mainPage, info.PageLink);
 
-                info.PosterNote =await CrawlBaseDAO.Instance.TryCheckTypeAsync(mainPage, info.PosterLink);
+                if (containerType != FBType.Unknown) info.ContainerType = containerType;
 
+                // Gán IDFB container
+                if (!string.IsNullOrWhiteSpace(idfbContainer) && idfbContainer != "N/A") info.ContainerIdFB = idfbContainer;
+                if (!string.IsNullOrWhiteSpace(info.ContainerIdFB) && info.ContainerIdFB != "N/A")
+                {
+                    var dbPage = SQLDAO.Instance.GetPageByIDFB(info.ContainerIdFB);
+                    if (dbPage != null)
+                    {
+                        info.PageID = dbPage.PageID;
+                        info.PageName = dbPage.PageName;
+                        info.PageLink = dbPage.PageLink;
+                        info.ContainerIdFB = dbPage.IDFBPage;
+
+                        Libary.Instance.LogTech("[ORIGINAL] ✅ Resolve from DB by IDFB");
+                    }
+                }
+                if (info.ContainerType == FBType.Fanpage)
+                {
+                    info.PosterName = info.PageName;
+                    info.PosterLink = info.PageLink;
+                    info.PosterIdFB = info.ContainerIdFB;
+                    info.PosterNote = FBType.Fanpage;
+
+                    Libary.Instance.LogTech("[ORIGINAL] Poster = Container Fanpage");
+                }
+                else if (info.ContainerType == FBType.GroupOn)
+                {
+                    var (posterType, idfbPoster) = await CrawlBaseDAO.Instance.TryCheckTypeFullAsync(mainPage, info.PosterLink);
+
+                    if (posterType != FBType.Unknown) info.PosterNote = posterType;
+
+                    if (!string.IsNullOrWhiteSpace(idfbPoster) && idfbPoster != "N/A") info.PosterIdFB = idfbPoster;
+
+                    Libary.Instance.LogTech("[ORIGINAL] Poster = entity trong Group");
+                }
+          
+            // 🔥 PERSON (THIẾU – BỔ SUNG)
+            // ========================
+        else if (info.ContainerType == FBType.Person ||
+             info.ContainerType == FBType.PersonKOL)
+                    {
+                    // ❗ container không tồn tại
+                    info.PageName = "N/A";
+                    info.PageLink = "N/A";
+                    info.ContainerIdFB = null;
+
+                    // poster chính là user
+                    if (ProcessingHelper.IsValidContent(info.PosterLink))
+                    {
+                        var (posterType, idfbPoster) =
+                            await CrawlBaseDAO.Instance.TryCheckTypeFullAsync(mainPage, info.PosterLink);
+
+                        if (posterType != FBType.Unknown)
+                            info.PosterNote = posterType;
+
+                        if (ProcessingHelper.IsValidContent(idfbPoster))
+                            info.PosterIdFB = idfbPoster;
+                    }
+
+                    Libary.Instance.LogTech("[ORIGINAL] PERSON → no container, poster = user");
+                }
+                Libary.Instance.LogDebug(
+                    $"Kết quả Original Page: PageName {info.PageName} , " +
+                    $"PageID {info.PageID}, Pagelink: {info.PageLink}, Pageidfb: {info.ContainerIdFB}"
+                );
+
+                Libary.Instance.LogDebug(
+                    $"Kết quả Original POSTER: PosterName {info.PosterName}, " +
+                    $"Posterlink: {info.PosterLink}, Posteridfb: {info.PosterIdFB}");
                 if (ProcessingHelper.IsValidContent(info.Content)) 
                 { Libary.Instance.LogTech($"{Libary.IconOK} [ORIGINAL POST] Lấy Content thành công {info.Content}"); }
                 success = true;
@@ -1152,15 +1223,14 @@ namespace CrawlFB_PW._1._0.DAO
                     if (link != "N/A") link = ProcessingHelper.ShortLinkPage(link);
 
                     Libary.Instance.LogDebug($"{Libary.IconWarn} [PageContainer-Feed] Fallback anchor | {name}");
-
+                    Libary.Instance.LogDebug($"{Libary.IconWarn} [PageContainer-Feed] Fallback anchor Link| {link}");
                     return (name, link);
                 }
 
                 // ==================================================
                 // 3️⃣ RỘNG NHẤT: div[data-ad-rendering-role='profile_name']
                 // ==================================================
-                var divWide = await feed.QuerySelectorAsync(
-                    "div[data-ad-rendering-role='profile_name'] a[href]");
+                var divWide = await feed.QuerySelectorAsync("div[data-ad-rendering-role='profile_name'] a[href]");
 
                 if (divWide != null)
                 {
@@ -1615,6 +1685,12 @@ namespace CrawlFB_PW._1._0.DAO
 
             if (string.IsNullOrWhiteSpace(target.PosterLink))
                 target.PosterLink = source.PosterLink;
+           
+            if (target.PosterNote == FBType.Unknown)
+                target.PosterNote = source.PosterNote;
+
+            if (target.ContainerType == FBType.Unknown)
+                target.ContainerType = source.ContainerType;
 
             if (!target.RealPostTime.HasValue)
             {
@@ -1630,6 +1706,25 @@ namespace CrawlFB_PW._1._0.DAO
 
             if (target.ShareCount == 0)
                 target.ShareCount = source.ShareCount;
+            // 🔥 IDFB + PAGEID (CỰC KỲ QUAN TRỌNG)
+
+            if (string.IsNullOrWhiteSpace(target.ContainerIdFB) || target.ContainerIdFB == "N/A")
+            {
+                if (!string.IsNullOrWhiteSpace(source.ContainerIdFB) && source.ContainerIdFB != "N/A")
+                    target.ContainerIdFB = source.ContainerIdFB;
+            }
+
+            if (string.IsNullOrWhiteSpace(target.PosterIdFB) || target.PosterIdFB == "N/A")
+            {
+                if (!string.IsNullOrWhiteSpace(source.PosterIdFB) && source.PosterIdFB != "N/A")
+                    target.PosterIdFB = source.PosterIdFB;
+            }
+
+            if (string.IsNullOrWhiteSpace(target.PageID) || target.PageID == "N/A")
+            {
+                if (!string.IsNullOrWhiteSpace(source.PageID) && source.PageID != "N/A")
+                    target.PageID = source.PageID;
+            }
         }
         // py pass nội dung bị che
         public  async Task BypassSensitiveReelAsync(IPage page, IElementHandle feed)
@@ -1692,17 +1787,15 @@ namespace CrawlFB_PW._1._0.DAO
             try
             {
                 if (posterContainer != null)
-                    (info.PosterName, info.PosterLink) =
-                        await CrawlBaseDAO.Instance
-                            .GetPosterInfoBySelectorsAsync(posterContainer);
+                    (info.PosterName, info.PosterLink) = await CrawlBaseDAO.Instance.GetPosterInfoBySelectorsAsync(posterContainer);
             }
             catch
             {
-                (info.PosterName, info.PosterLink) =
-                    await CrawlBaseDAO.Instance
-                        .GetPosterFromProfileNameAsync(post);
+                (info.PosterName, info.PosterLink) = await CrawlBaseDAO.Instance.GetPosterFromProfileNameAsync(post);
             }
-
+            // ❌ link rác → bỏ luôn
+            if (!ProcessingHelper.IsValidContent(info.PosterLink))
+                return;
             if (!string.IsNullOrWhiteSpace(info.PosterLink) &&
                 info.PosterLink != "N/A")
             {
@@ -1805,5 +1898,24 @@ namespace CrawlFB_PW._1._0.DAO
             Libary.Instance.LogTech($"[FillFullContentPostNormal] ContentLen={(content?.Length ?? 0)} | PostType={postType}");
         }
 
+        // chektype mới
+        public async Task<(FBType Type, string IdFB)> TryCheckTypeFullAsync(IPage page, string link)
+        {
+            // ❌ chặn từ đầu (QUAN TRỌNG)
+            if (page == null || page.IsClosed ||
+                !ProcessingHelper.IsValidContent(link))
+                return (FBType.Unknown, null);
+
+            link = UrlHelper.ShortenPagePersonLink(link);
+            link = ProcessingHelper.NormalizeInputUrl(link);
+
+            // ❌ chặn lần 2 sau normalize
+            if (!ProcessingHelper.IsValidContent(link))
+                return (FBType.Unknown, null);
+
+            string idfb = ProcessingHelper.ExtractFacebookId(link);
+
+            return await CheckTypeCachedAsync(page, link, idfb);
+        }
     }
 }

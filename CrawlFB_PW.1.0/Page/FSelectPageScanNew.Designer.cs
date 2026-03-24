@@ -49,12 +49,12 @@ namespace CrawlFB_PW._1._0.Page
             this.btnCannel = new DevExpress.XtraBars.BarButtonItem();
             this.btn_Update = new DevExpress.XtraBars.BarSubItem();
             this.barButtonItemUpdateIscan = new DevExpress.XtraBars.BarButtonItem();
+            this.btn_SelectAll = new DevExpress.XtraBars.BarButtonItem();
             this.bar3 = new DevExpress.XtraBars.Bar();
             this.barDockControlTop = new DevExpress.XtraBars.BarDockControl();
             this.barDockControlBottom = new DevExpress.XtraBars.BarDockControl();
             this.barDockControlLeft = new DevExpress.XtraBars.BarDockControl();
             this.barDockControlRight = new DevExpress.XtraBars.BarDockControl();
-            this.btn_SelectAll = new DevExpress.XtraBars.BarButtonItem();
             ((System.ComponentModel.ISupportInitialize)(this.panelControlMain)).BeginInit();
             this.panelControlMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
@@ -168,8 +168,8 @@ namespace CrawlFB_PW._1._0.Page
             // 
             this.btnFilterPage.Caption = "Lọc Page";
             this.btnFilterPage.Id = 5;
-            this.btnFilterPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnReset.ImageOptions.Image")));
-            this.btnFilterPage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnReset.ImageOptions.LargeImage")));
+            this.btnFilterPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnFilterPage.ImageOptions.Image")));
+            this.btnFilterPage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnFilterPage.ImageOptions.LargeImage")));
             this.btnFilterPage.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
             new DevExpress.XtraBars.LinkPersistInfo(this.btnSelectAll),
             new DevExpress.XtraBars.LinkPersistInfo(this.btnOnlyScan),
@@ -198,8 +198,8 @@ namespace CrawlFB_PW._1._0.Page
             // 
             this.btn_Reset.Caption = "Reset";
             this.btn_Reset.Id = 9;
-            this.btn_Reset.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("barButtonItem2.ImageOptions.Image")));
-            this.btn_Reset.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("barButtonItem2.ImageOptions.LargeImage")));
+            this.btn_Reset.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_Reset.ImageOptions.Image")));
+            this.btn_Reset.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_Reset.ImageOptions.LargeImage")));
             this.btn_Reset.Name = "btn_Reset";
             // 
             // btnCannel
@@ -225,6 +225,14 @@ namespace CrawlFB_PW._1._0.Page
             this.barButtonItemUpdateIscan.Id = 12;
             this.barButtonItemUpdateIscan.Name = "barButtonItemUpdateIscan";
             this.barButtonItemUpdateIscan.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barButtonItemUpdateIscan_ItemClick);
+            // 
+            // btn_SelectAll
+            // 
+            this.btn_SelectAll.Caption = "Chọn Tất";
+            this.btn_SelectAll.Id = 13;
+            this.btn_SelectAll.ImageOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("btn_SelectAll.ImageOptions.SvgImage")));
+            this.btn_SelectAll.Name = "btn_SelectAll";
+            this.btn_SelectAll.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_SelectAll_ItemClick);
             // 
             // bar3
             // 
@@ -269,14 +277,6 @@ namespace CrawlFB_PW._1._0.Page
             this.barDockControlRight.Location = new System.Drawing.Point(1057, 53);
             this.barDockControlRight.Manager = this.barManager1;
             this.barDockControlRight.Size = new System.Drawing.Size(0, 417);
-            // 
-            // btn_SelectAll
-            // 
-            this.btn_SelectAll.Caption = "Chọn Tất";
-            this.btn_SelectAll.Id = 13;
-            this.btn_SelectAll.ImageOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("btn_SelectAll.ImageOptions.SvgImage")));
-            this.btn_SelectAll.Name = "btn_SelectAll";
-            this.btn_SelectAll.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_SelectAll_ItemClick);
             // 
             // FSelectPageScanNew
             // 

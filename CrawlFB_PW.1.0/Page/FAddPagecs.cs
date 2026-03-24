@@ -243,13 +243,11 @@ namespace CrawlFB_PW._1._0.Page
                     try
                     {
                         // 1️⃣ Đảm bảo profile chỉ còn 1 tab (tab gốc)
-                        var mainPage = await Ads.Instance
-                            .GetPageEnsureSingleTabAsync(profile.IDAdbrowser);
+                        var mainPage = await Ads.Instance.GetPageEnsureSingleTabAsync(profile.IDAdbrowser);
                         if (mainPage == null)
                             return;
                        // 2️⃣ Nếu CẦN tab phụ thì mới mở
-                        var tab = await Ads.Instance
-                            .OpenNewTabAsync(profile.IDAdbrowser);
+                        var tab = await Ads.Instance.OpenNewTabAsync(profile.IDAdbrowser);
                         // ⭐ GẮN PROFILE CONTEXT để log theo profile
                         Libary.Instance.SetProfileContext(profile.IDAdbrowser,profile.ProfileName);
                         if (tab == null)

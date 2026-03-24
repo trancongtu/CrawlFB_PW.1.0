@@ -22,10 +22,13 @@ namespace CrawlFB_PW._1._0.ViewModels
         public string PosterName { get; set; } = "N/A";
         public string PosterLink { get; set; } = "N/A";
         public string PosterNote { get; set; } = "N/A";
+        public string PosterIdFB { get; set; }
+
         //=========
         // 🔹 Trang hoặc Group chứa bài đăng
         public string PageName { get; set; } = "N/A";
         public string PageLink { get; set; } = "N/A";
+        public string ContainerIdFB { get; set; }
         public int Like { get; set; }
         public int Comment { get; set; }
         public int Share { get; set; }

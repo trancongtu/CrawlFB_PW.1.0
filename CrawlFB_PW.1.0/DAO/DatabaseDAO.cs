@@ -2237,16 +2237,8 @@ ORDER BY PersonTimeSave DESC
         }
         public void ResetAllPageMonitorAuto()
         {
-            string dbPath = PathHelper.Instance.GetMainDatabasePath();
-            using (var conn = SqliteHelper.Instance.GetConnection(dbPath))
-            {
-                conn.Open();
-                string sql = "UPDATE TablePageMonitor SET IsAuto = 0";
-                using (var cmd = new SQLiteCommand(sql, conn))
-                {
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            string sql = "UPDATE TablePageMonitor SET IsAuto = 0";
+            SQLDAO.Instance.ExecuteNonQuery(sql);
         }
 
         public void UpdateMonitorIsAuto(string pageId, int isAuto)

@@ -11,6 +11,7 @@ namespace CrawlFB_PW._1._0.DTO
     {
         // Primary logical id (hash từ PostLink)
         public string PostID { get; set; } = "N/A";
+        public string PageID { get; set; }
         // 🔹 Thông tin bài đăng
         public string PostTime { get; set; } = "N/A";
         // 🔥 Thời gian gốc – DÙNG CHO LOGIC

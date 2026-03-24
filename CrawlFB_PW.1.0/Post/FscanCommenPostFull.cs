@@ -136,11 +136,8 @@ namespace CrawlFB_PW._1._0.Post
             gridView1.OptionsBehavior.Editable = true;
             gridView1.OptionsBehavior.ReadOnly = false;        
             gridView1.Columns[nameof(CommentGridRow.Select)]
-                .OptionsColumn.AllowEdit = true;
-           
-
-        }
-       
+                .OptionsColumn.AllowEdit = true;         
+        }    
         private void LoadPostLinkFromText()
         {
             string rawUrl = txd_PostLink.EditValue?.ToString()?.Trim();
@@ -387,9 +384,7 @@ namespace CrawlFB_PW._1._0.Post
             }
 
         }
-        private async Task<string> WaitForUserOpenPostAsync(
-    IPage page,
-    int timeoutMs = 120000) // 2 phút
+        private async Task<string> WaitForUserOpenPostAsync(IPage page,int timeoutMs = 120000) // 2 phút
         {
             var start = DateTime.Now;
 
@@ -457,7 +452,6 @@ namespace CrawlFB_PW._1._0.Post
                 MessageBox.Show("❌ Lỗi xuất Excel:\n" + ex.Message);
             }
         }
-
         private void btn_SelectAll_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             UIGridHelper.SelectAll(gridControl1, true);
@@ -704,7 +698,6 @@ namespace CrawlFB_PW._1._0.Post
 
             return result;
         }
-
         private void btn_SaveJson_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             if (_data == null || _data.Count == 0)
@@ -740,7 +733,6 @@ namespace CrawlFB_PW._1._0.Post
             }
 
         }
-
         private void btn_LoadDataJson_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             using (OpenFileDialog ofd = new OpenFileDialog())
@@ -789,7 +781,6 @@ namespace CrawlFB_PW._1._0.Post
                 MessageBox.Show("✅ Load JSON thành công");
             }
         }
-
 
         private void btn_ExportFullAndPrint_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {

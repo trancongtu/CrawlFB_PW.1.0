@@ -9,17 +9,17 @@ namespace CrawlFB_PW._1._0.ViewModels
     public class PostInfoRawVM
     {
         // ===== POST CORE =====
-        public string PostLink { get; set; } = "N/A";
-        public string PostTime { get; set; } = "N/A";
+        public string PostLink { get; set; }
+        public string PostTime { get; set; }
         public DateTime? RealPostTime { get; set; }
 
         // ===== POSTER =====
-        public string PosterName { get; set; } = "N/A";
-        public string PosterLink { get; set; } = "N/A";
+        public string PosterName { get; set; }
+        public string PosterLink { get; set; }
         public FBType PosterNote { get; set; } = FBType.Unknown;
 
         // ===== CONTENT =====
-        public string Content { get; set; } = "N/A";
+        public string Content { get; set; }
         public PostType PostType { get; set; } = PostType.Page_Unknow;
 
         // ===== INTERACTION =====
@@ -30,14 +30,12 @@ namespace CrawlFB_PW._1._0.ViewModels
         // ===== CONTEXT =====
         public string PageName { get; set; }
         public string PageLink { get; set; }
-        public string AttachmentJson { get; set; } = "N/A";
+        public string PageID { get; set; }
+        public string AttachmentJson { get; set; }
         public FBType ContainerType { get; set; } = FBType.Unknown;
 
-        // 🔥 thêm ngay từ đầu
-        public string ContainerIdFB { get; set; } = "";
-
-        // sau này
-        public string PosterIdFB { get; set; } = "";
+        public string ContainerIdFB { get; set; }
+        public string PosterIdFB { get; set; }
     }
 
 }

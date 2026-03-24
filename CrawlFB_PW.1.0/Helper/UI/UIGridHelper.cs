@@ -165,12 +165,22 @@ namespace CrawlFB_PW._1._0.Helper
         SetIfExists(gv, "TimeLastPostView", "T/g bài cuối");
         // ===== POST =====
         SetIfExists(gv, "PostLink", "Link bài viết");
-        SetIfExists(gv, "Content", "Nội dung");     
+        SetIfExists(gv, "Content", "Nội dung");
         // ===== PERSON =====
         SetIfExists(gv, "PosterName", "Người đăng");
         SetIfExists(gv, "PosterLink", "Link Ng đăng");
-    }
+        //========== Topic ==========
+        SetIfExists(gv, "TopicName", "Chủ đề");
+        SetIfExists(gv, "Topic", "Chủ đề");
+        SetIfExists(gv, "CountKeyword", "Số từ khóa");
+            SetIfExists(gv, "KeywordName", "Từ khóa");
+            SetIfExists(gv, "CountTopic", "Số chủ đề");
+            SetIfExists(gv, "AttentionScore", "Điểm theo dõi");
+            SetIfExists(gv, "NegativeScore", "Điểm tiêu cực");
+            SetIfExists(gv, "IsAttention", "Theo dõi");
+            SetIfExists(gv, "IsNegative", "Tiêu cực");
 
+        }
         private static void SetIfExists(GridView gv, string fieldName, string caption)
         {
             var col = gv.Columns[fieldName];
@@ -234,7 +244,6 @@ namespace CrawlFB_PW._1._0.Helper
                 col.Visible = false;
         }
         // chỉ hiện một số cột
-
         public static void ShowOnlyColumns(GridView gv, params string[] visibleFields)
         {
             if (gv == null) return;
@@ -275,7 +284,7 @@ namespace CrawlFB_PW._1._0.Helper
             
             gv.RowHeight = 24;
         }
-    public static void ApplyCommentLink(GridView gv, GridControl grid)
+        public static void ApplyCommentLink(GridView gv, GridControl grid)
         {
             var col = gv.Columns[nameof(CommentGridRow.LinkView)];
             if (col == null) return;
@@ -304,102 +313,16 @@ namespace CrawlFB_PW._1._0.Helper
             grid.RepositoryItems.Add(linkEdit);
             col.ColumnEdit = linkEdit;
         }
-        /// Hyper chung chuẩn
-     public static void ApplyHyperlinkColumn( GridView gv,GridControl grid,string fieldName,
-         string displayText = "🔗 Xem link",bool hideIfEmpty = false)
-        {
-          
-            if (gv == null || grid == null) return;
-            if (gv.Columns[fieldName] == null) return;
-
-            var col = gv.Columns[fieldName];
-
-            // ===== Repository =====
-            var linkEdit = new RepositoryItemHyperLinkEdit
-            {
-                SingleClick = true,
-                TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor
-            };
-
-            linkEdit.OpenLink += (s, e) =>
-            {
-                string url = e.EditValue as string;
-                if (string.IsNullOrWhiteSpace(url)) return;
-
-                try
-                {
-                    System.Diagnostics.Process.Start(url);
-                }
-                catch { }
-            };
-
-            grid.RepositoryItems.Add(linkEdit);
-            col.ColumnEdit = linkEdit;
-
-            // ===== Display text =====
-            gv.CustomColumnDisplayText += (s, e) =>
-            {
-                if (e.Column.FieldName != fieldName) return;
-
-                string url = e.Value as string;
-                if (string.IsNullOrWhiteSpace(url))
-                {
-                    e.DisplayText = hideIfEmpty ? "" : "";
-                }
-                else
-                {
-                    e.DisplayText = displayText;
-                }
-            };
-
-            // ===== Tooltip =====
-            if (grid.ToolTipController == null)
-                grid.ToolTipController = new ToolTipController();
-
-            grid.ToolTipController.GetActiveObjectInfo += (s, e) =>
-            {
-                var view = grid.FocusedView as GridView;
-                if (view == null) return;
-
-                var hit = view.CalcHitInfo(e.ControlMousePosition);
-                if (!hit.InRowCell) return;
-                if (hit.Column.FieldName != fieldName) return;
-
-                string url = view.GetRowCellValue(hit.RowHandle, hit.Column) as string;
-                if (string.IsNullOrWhiteSpace(url)) return;
-
-                object key = hit.RowHandle + "_" + fieldName;
-                e.Info = new ToolTipControlInfo(key, url);
-            };
-
-            // ===== Ẩn row nếu link rỗng (optional) =====
-            if (hideIfEmpty)
-            {
-                gv.CustomRowFilter += (s, e) =>
-                {
-                    if (e.ListSourceRow < 0) return;
-
-                    var view = s as GridView;
-                    string url = view.GetListSourceRowCellValue(
-                        e.ListSourceRow, fieldName
-                    ) as string;
-
-                    if (string.IsNullOrWhiteSpace(url))
-                    {
-                        e.Visible = false;
-                        e.Handled = true;
-                    }
-                };
-            }
-        }
+        /// Hyper chung chuẩn       
         public static void LockAllColumnsExceptLinks(GridView gv)
         {
             foreach (DevExpress.XtraGrid.Columns.GridColumn col in gv.Columns)
             {
                 bool isInteractive =
                     col.FieldName.Contains("Link") ||
-                    col.FieldName.Equals("AttachmentView", StringComparison.OrdinalIgnoreCase);
-
+                    col.FieldName.Equals("AttachmentView", StringComparison.OrdinalIgnoreCase)||
+                    col.FieldName.EndsWith("LinkView", StringComparison.OrdinalIgnoreCase) ||
+                    col.FieldName.Equals("ViewComments", StringComparison.OrdinalIgnoreCase);
                 if (isInteractive)
                 {
                     // 🔓 CỘT TƯƠNG TÁC (Link + Attachment)
@@ -416,94 +339,18 @@ namespace CrawlFB_PW._1._0.Helper
                 }
             }
         }
-
-        // ROWCELL CLICK
-        public static void EnableLinkClickByRowCell(GridView gv)
-        {
-            gv.RowCellClick += (s, e) =>
-            {
-                if (e.RowHandle < 0) return;
-                if (!e.Column.FieldName.EndsWith("Link")) return;
-
-                var url = gv.GetRowCellValue(e.RowHandle, e.Column) as string;
-                if (string.IsNullOrWhiteSpace(url)) return;
-
-                try
-                {
-                    System.Diagnostics.Process.Start(url);
-                }
-                catch { }
-            };
-        }
-        public static void ApplyLinkDisplayText(GridView gv,string displayText = "🔗 Mở link")
-        {
-            gv.CustomColumnDisplayText += (s, e) =>
-            {
-                if (e.Value == null) return;
-                if (!e.Column.FieldName.EndsWith("Link")) return;
-
-                var url = e.Value as string;
-                if (string.IsNullOrWhiteSpace(url))
-                {
-                    e.DisplayText = "";
-                }
-                else
-                {
-                    e.DisplayText = displayText;
-                }
-            };
-        }
-        public static void ApplyLinkTooltip(GridView gv, GridControl grid)
-        {
-            if (grid.ToolTipController == null)
-                grid.ToolTipController = new DevExpress.Utils.ToolTipController();
-
-            grid.ToolTipController.GetActiveObjectInfo += (s, e) =>
-            {
-                var view = grid.FocusedView as GridView;
-                if (view == null) return;
-
-                var hit = view.CalcHitInfo(e.ControlMousePosition);
-                if (!hit.InRowCell) return;
-                if (!hit.Column.FieldName.EndsWith("Link")) return;
-
-                var url = view.GetRowCellValue(hit.RowHandle, hit.Column) as string;
-                if (string.IsNullOrWhiteSpace(url)) return;
-
-                e.Info = new DevExpress.Utils.ToolTipControlInfo(
-                    hit.RowHandle + "_" + hit.Column.FieldName,
-                    url
-                );
-            };
-        }
-
+        //============
         // ==================================================
-        // 📎 ATTACHMENT LINK (ICON + CLICK + TOOLTIP)
-        // YÊU CẦU ViewModel:
-        //   string AttachmentView  (link thật)
-        //   bool   HasReel
-        //   bool   HasVideo
-        //   bool   HasPhoto
+        // APPLY LINK COLUMN (POST / PAGE / POSTER)
         // ==================================================
-        public static void ApplyAttachmentLink(GridView gv,GridControl grid,string fieldName = "AttachmentView")
+        public static void ApplyHyperlinkColumn(GridView gv, GridControl grid,string fieldName,string displayText = "🔗 Mở", bool hideIfEmpty = false)
         {
             if (gv == null || grid == null) return;
+
             var col = gv.Columns[fieldName];
             if (col == null) return;
 
-            // ===============================
-            // 🔓 MỞ CỘT ATTACHMENT (QUAN TRỌNG)
-            // ===============================
-            col.OptionsColumn.AllowEdit = true;
-            col.OptionsColumn.ReadOnly = false;
-            col.OptionsColumn.AllowFocus = true;
-
-            col.Width = 40;
-            col.OptionsColumn.FixedWidth = true;
-
-            // ===============================
-            // Repository HyperLink
-            // ===============================
+            // ===== Repository =====
             var linkEdit = new RepositoryItemHyperLinkEdit
             {
                 SingleClick = true,
@@ -513,75 +360,44 @@ namespace CrawlFB_PW._1._0.Helper
             linkEdit.OpenLink += (s, e) =>
             {
                 string url = e.EditValue as string;
-
-                if (string.IsNullOrWhiteSpace(url) || url == "N/A")
-                    return;
+                if (string.IsNullOrWhiteSpace(url) || url == "N/A") return;
 
                 try
                 {
-                    System.Diagnostics.Process.Start(url);
+                    System.Diagnostics.Process.Start(
+                        new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = url,
+                            UseShellExecute = true
+                        });
                 }
                 catch { }
+
+                e.Handled = true;
             };
 
             grid.RepositoryItems.Add(linkEdit);
-            col.ColumnEdit = linkEdit;
 
-            // ===============================
-            // ICON theo loại attachment
-            // ===============================
+            col.ColumnEdit = linkEdit;
+            col.OptionsColumn.AllowEdit = true;
+            col.OptionsColumn.ReadOnly = false;
+
+            // ===== Display text giả =====
             gv.CustomColumnDisplayText += (s, e) =>
             {
                 if (e.Column.FieldName != fieldName) return;
 
                 string url = e.Value as string;
 
-                // 🔥 CHẶN "N/A"
                 if (string.IsNullOrWhiteSpace(url) || url == "N/A")
-                {
                     e.DisplayText = "";
-                    return;
-                }
-
-                var view = s as GridView;
-                if (view == null || e.ListSourceRowIndex < 0)
-                {
-                    e.DisplayText = "📎";
-                    return;
-                }
-
-                var row = view.GetRow(e.ListSourceRowIndex);
-                if (row == null)
-                {
-                    e.DisplayText = "📎";
-                    return;
-                }
-
-                bool hasReel = false, hasVideo = false, hasPhoto = false;
-
-                var pReel = row.GetType().GetProperty("HasReel");
-                var pVideo = row.GetType().GetProperty("HasVideo");
-                var pPhoto = row.GetType().GetProperty("HasPhoto");
-
-                if (pReel != null && (bool)pReel.GetValue(row)) hasReel = true;
-                if (pVideo != null && (bool)pVideo.GetValue(row)) hasVideo = true;
-                if (pPhoto != null && (bool)pPhoto.GetValue(row)) hasPhoto = true;
-
-                if (hasReel)
-                    e.DisplayText = "🎬";
-                else if (hasVideo)
-                    e.DisplayText = "🎥";
-                else if (hasPhoto)
-                    e.DisplayText = "📷";
                 else
-                    e.DisplayText = "📎";
+                    e.DisplayText = displayText;
             };
 
-            // ===============================
-            // Tooltip hiện link thật
-            // ===============================
+            // ===== Tooltip =====
             if (grid.ToolTipController == null)
-                grid.ToolTipController = new DevExpress.Utils.ToolTipController();
+                grid.ToolTipController = new ToolTipController();
 
             grid.ToolTipController.GetActiveObjectInfo += (s, e) =>
             {
@@ -595,12 +411,148 @@ namespace CrawlFB_PW._1._0.Helper
                 string url = view.GetRowCellValue(hit.RowHandle, hit.Column) as string;
                 if (string.IsNullOrWhiteSpace(url) || url == "N/A") return;
 
-                e.Info = new DevExpress.Utils.ToolTipControlInfo(
-                    hit.RowHandle + "_" + fieldName,
+                object key = hit.RowHandle + "_" + fieldName;
+                e.Info = new ToolTipControlInfo(key, url);
+            };
+
+            // ===== Ẩn row nếu link rỗng (optional) =====
+            if (hideIfEmpty)
+            {
+                gv.CustomRowFilter += (s, e) =>
+                {
+                    if (e.ListSourceRow < 0) return;
+
+                    var view = s as GridView;
+
+                    string url = view.GetListSourceRowCellValue(
+                        e.ListSourceRow, fieldName
+                    ) as string;
+
+                    if (string.IsNullOrWhiteSpace(url) || url == "N/A")
+                    {
+                        e.Visible = false;
+                        e.Handled = true;
+                    }
+                };
+            }
+        }
+
+        // ==================================================
+        // TOOLTIP LINK
+        // ==================================================
+        public static void ApplyLinkTooltip(GridView gv, GridControl grid)
+        {
+            if (grid.ToolTipController == null)
+                grid.ToolTipController = new ToolTipController();
+
+            grid.ToolTipController.GetActiveObjectInfo += (s, e) =>
+            {
+                var view = grid.FocusedView as GridView;
+                if (view == null) return;
+
+                var hit = view.CalcHitInfo(e.ControlMousePosition);
+                if (!hit.InRowCell) return;
+
+                if (!hit.Column.FieldName.EndsWith("Link"))
+                    return;
+
+                var url = view.GetRowCellValue(hit.RowHandle, hit.Column) as string;
+                if (string.IsNullOrWhiteSpace(url)) return;
+
+                e.Info = new ToolTipControlInfo(
+                    hit.RowHandle + "_" + hit.Column.FieldName,
                     url
                 );
             };
         }
+
+        // ==================================================
+        // ATTACHMENT LINK (VIDEO / PHOTO / REEL)
+        // ==================================================
+        public static void ApplyAttachmentLink(
+            GridView gv,
+            GridControl grid,
+            string fieldName = "AttachmentView"
+        )
+        {
+            var col = gv.Columns[fieldName];
+            if (col == null) return;
+
+            col.OptionsColumn.AllowEdit = true;
+            col.OptionsColumn.ReadOnly = false;
+            col.OptionsColumn.AllowFocus = true;
+            col.Width = 40;
+
+            var linkEdit = new RepositoryItemHyperLinkEdit
+            {
+                SingleClick = true,
+                TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor
+            };
+
+            linkEdit.OpenLink += (s, e) =>
+            {
+                string url = e.EditValue as string;
+
+                if (string.IsNullOrWhiteSpace(url))
+                    return;
+
+                try
+                {
+                    System.Diagnostics.Process.Start(url);
+                }
+                catch { }
+            };
+
+            grid.RepositoryItems.Add(linkEdit);
+            col.ColumnEdit = linkEdit;
+
+            // ICON
+            gv.CustomColumnDisplayText += (s, e) =>
+            {
+                if (e.Column.FieldName != fieldName) return;
+
+                string url = e.Value as string;
+
+                if (string.IsNullOrWhiteSpace(url) || url == "N/A")
+                {
+                    e.DisplayText = "";
+                    return;
+                }
+
+                var row = gv.GetRow(e.ListSourceRowIndex);
+                if (row == null)
+                {
+                    e.DisplayText = "📎";
+                    return;
+                }
+
+                bool hasReel = GetBool(row, "HasReel");
+                bool hasVideo = GetBool(row, "HasVideo");
+                bool hasPhoto = GetBool(row, "HasPhoto");
+
+                if (hasReel) e.DisplayText = "🎬";
+                else if (hasVideo) e.DisplayText = "🎥";
+                else if (hasPhoto) e.DisplayText = "📷";
+                else e.DisplayText = "📎";
+            };
+        }
+
+        private static bool GetBool(object obj, string prop)
+        {
+            var p = obj.GetType().GetProperty(prop);
+            if (p == null) return false;
+            return (bool)p.GetValue(obj);
+        }
+
+        // ==================================================
+        // 📎 ATTACHMENT LINK (ICON + CLICK + TOOLTIP)
+        // YÊU CẦU ViewModel:
+        //   string AttachmentView  (link thật)
+        //   bool   HasReel
+        //   bool   HasVideo
+        //   bool   HasPhoto
+        // ==================================================
+       
 
 
     }

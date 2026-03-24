@@ -731,9 +731,11 @@ namespace CrawlFB_PW._1._0.DAO
         //-- hàm tổng share reel
         public async Task OpenReelShareAndInitVMAsync(IPage mainPage,PostInfoRawVM info)
         {
-            if (info == null || string.IsNullOrWhiteSpace(info.PostLink))
+            if (info == null || !ProcessingHelper.IsValidContent(info.PostLink))
+            {
+                Libary.Instance.LogDebug($"❌ [REEL] Skip open invalid link: {info?.PostLink}");
                 return;
-
+            }
             IPage reelPage = null;
             IElementHandle feed = null;
             bool IsGroups = false;

@@ -163,7 +163,32 @@ namespace CrawlFB_PW._1._0.Helper
             }).ToList();
         }
 
+        public static List<SharePostVM> LoadSharePostJson(string filePath)
+        {
+            var json = File.ReadAllText(filePath);
 
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
 
+            return JsonSerializer.Deserialize<List<SharePostVM>>(json, options);
+        }
+        //analyze
+        public static string Serialize<T>(T obj)
+        {
+            if (obj == null)
+                return null;
+
+            return System.Text.Json.JsonSerializer.Serialize(obj);
+        }
+
+        public static T Deserialize<T>(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return default;
+
+            return System.Text.Json.JsonSerializer.Deserialize<T>(json);
+        }
     }
 }

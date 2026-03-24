@@ -437,10 +437,24 @@ namespace CrawlFB_PW._1._0.Helper
                 // =========================
                 // CASE 0: PROFILE ID
                 // =========================
-                if (path.Equals("/profile.php", StringComparison.OrdinalIgnoreCase)
-                    && query.Contains("id="))
+                if (path.Equals("/profile.php", StringComparison.OrdinalIgnoreCase))
                 {
-                    return $"https://{host}/profile.php{query}";
+                    var m = Regex.Match(query, @"[?&]id=(\d+)", RegexOptions.IgnoreCase);
+                    if (m.Success)
+                    {
+                        string id = m.Groups[1].Value;
+
+                        string finalHost = host;
+                        if (string.IsNullOrWhiteSpace(finalHost))
+                            finalHost = "facebook.com";
+
+                        finalHost = finalHost
+                            .Replace("www.facebook.com", "facebook.com")
+                            .Replace("m.facebook.com", "facebook.com")
+                            .Replace("web.facebook.com", "facebook.com");
+
+                        return $"https://{finalHost}/profile.php?id={id}";
+                    }
                 }
 
                 // =========================
@@ -485,6 +499,61 @@ namespace CrawlFB_PW._1._0.Helper
             catch
             {
                 return rawUrl;
+            }
+        }
+        public static string ShortLinkPageOriginal(string href)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(href) ||
+                    href == "N/A" ||
+                    href == "#" ||
+                    href.StartsWith("javascript", StringComparison.OrdinalIgnoreCase))
+                    return "N/A";
+
+                href = href.Trim();
+
+                // relative -> absolute
+                if (href.StartsWith("/"))
+                    href = "https://facebook.com" + href;
+
+                href = href.Replace("www.facebook.com", "facebook.com")
+                           .Replace("m.facebook.com", "facebook.com")
+                           .Replace("web.facebook.com", "facebook.com");
+
+                if (!Uri.TryCreate(href, UriKind.Absolute, out var uri))
+                    return href;
+
+                string host = "facebook.com";
+                string path = uri.AbsolutePath;
+                string query = uri.Query ?? "";
+
+                // profile.php?id=...
+                if (path.Equals("/profile.php", StringComparison.OrdinalIgnoreCase))
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(
+                        query,
+                        @"[?&]id=(\d+)",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                    if (m.Success)
+                        return $"https://{host}/profile.php?id={m.Groups[1].Value}";
+                }
+
+                // groups
+                var segs = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                if (segs.Length >= 2 && segs[0].Equals("groups", StringComparison.OrdinalIgnoreCase))
+                    return $"https://{host}/groups/{segs[1]}";
+
+                // username/page slug
+                if (segs.Length >= 1)
+                    return $"https://{host}/{segs[0]}";
+
+                return href;
+            }
+            catch
+            {
+                return href;
             }
         }
         public static string ShortenFacebookPostLink(string originalLink)
@@ -654,7 +723,7 @@ namespace CrawlFB_PW._1._0.Helper
                 }
 
                 // ✅ profile person (username hoặc username.id)
-                return $"https://Fb.com/{first}";
+                return $"https://Facebook.com/{first}";
             }
             catch
             {
@@ -874,6 +943,67 @@ namespace CrawlFB_PW._1._0.Helper
             }
 
             return FBType.Unknown;
+        }
+        // hàn cho commetn
+        public static string NormalizeCommentActorProfileLink(string rawUrl)
+        {
+            if (string.IsNullOrWhiteSpace(rawUrl))
+                return "";
+
+            string url = rawUrl.Trim();
+
+            // =========================
+            // 1️⃣ Prefix domain nếu là relative
+            // =========================
+            if (url.StartsWith("/"))
+                url = "https://www.facebook.com" + url;
+
+            // =========================
+            // 2️⃣ Bỏ query rác
+            // =========================
+            int q = url.IndexOf("?", StringComparison.Ordinal);
+            if (q > 0)
+                url = url.Substring(0, q);
+
+            // =========================
+            // 3️⃣ CASE: /groups/{gid}/user/{uid}
+            // =========================
+            int idxUser = url.IndexOf("/user/", StringComparison.OrdinalIgnoreCase);
+            if (idxUser >= 0)
+            {
+                string uid = url.Substring(idxUser + "/user/".Length);
+
+                int slash = uid.IndexOf("/", StringComparison.Ordinal);
+                if (slash > 0)
+                    uid = uid.Substring(0, slash);
+
+                if (!string.IsNullOrWhiteSpace(uid))
+                    return "https://www.facebook.com/profile.php?id=" + uid;
+            }
+
+            // =========================
+            // 4️⃣ CASE: profile.php?id=...
+            // =========================
+            if (url.IndexOf("profile.php", StringComparison.OrdinalIgnoreCase) >= 0)
+                return url;
+
+            // =========================
+            // 5️⃣ CASE: username (/abc.xyz)
+            // loại trừ group / page
+            // =========================
+            bool isGroup =
+                url.IndexOf("/groups/", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool isPage =
+                url.IndexOf("/pages/", StringComparison.OrdinalIgnoreCase) >= 0
+                || url.IndexOf("/community/", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (!isGroup && !isPage)
+                return url;
+
+            // =========================
+            // 6️⃣ FALLBACK
+            // =========================
+            return url;
         }
 
     }

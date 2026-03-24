@@ -121,7 +121,7 @@ namespace CrawlFB_PW._1._0.Page
         }
         private void barButtonItemLoadPage_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            using (var f = new FSelectPageScanNew())
+            using (var f = new FSelectPageUpdate())
             {
                 if (f.ShowDialog() == DialogResult.OK)
                 {
@@ -188,6 +188,7 @@ namespace CrawlFB_PW._1._0.Page
                     PageID = p.PageID,
                     PageName = p.PageName,
                     PageLink = p.PageLink,
+                    IDFBPage = p.IDFBPage,
                     TimeLastPost = p.TimeLastPost,                 
                     Status = UIStatus.Pending,   // trạng thái ban đầu
                     Select = false
@@ -213,29 +214,34 @@ namespace CrawlFB_PW._1._0.Page
                 UIGridHelper.EnableRowIndicatorSTT(gv);
                 UIGridHelper.ApplyVietnameseCaption(gv);
 
-             UIGridHelper.ShowOnlyColumns(
-                gv,
-                "PostLink",
-                "TimeView",
-                "Content",
-                "AttachmentView",   // 🔥 THÊM
-                "Like",
-                "Share",
-                "Comment",
-                "PostType",
-                "PosterName",
-                "PosterLink",
-                "PosterNote",
-                "PageName",
-                "PageLink"
-            );
+                UIGridHelper.ShowOnlyColumns(
+                    gv,
+                    "PostLink",
+                    "TimeView",
+                    "Content",
+                    "AttachmentView",
+                    "Like",
+                    "Share",
+                    "Comment",
+                    "PostType",
+                    "PosterName",
+                    "PosterLink",
+                    "PosterNote",
+                    "PageName",
+                    "PageLink"
+                );
+                UIGridHelper.LockAllColumnsExceptLinks(gv);
+                // ⭐ THÊM CÁC DÒNG NÀY
+                UIGridHelper.ApplyHyperlinkColumn(gridViewPost, gridControlPost, "PostLink", "🔗 Mở Bài");
+                UIGridHelper.ApplyHyperlinkColumn(gridViewPost, gridControlPost, "PageLink", "📄 Mở Page");
+                UIGridHelper.ApplyHyperlinkColumn(gridViewPost, gridControlPost, "PosterLink", "👤 Mở Người đăng");
 
-
-                UIGridHelper.ApplyLinkDisplayText(gridViewPost);
-                UIGridHelper.EnableLinkClickByRowCell(gridViewPost);
-                UIGridHelper.ApplyLinkTooltip(gridViewPost, gridControlPost);
                 UIGridHelper.ApplyAttachmentLink(gridViewPost, gridControlPost, "AttachmentView");
-                // UIGridHelper.LockAllColumnsExceptLinks(gv);
+
+                UIGridHelper.ApplyLinkTooltip(gridViewPost, gridControlPost);
+                UIGridHelper.LockAllColumnsExceptLinks(gv);
+
+                gv.OptionsBehavior.EditorShowMode = DevExpress.Utils.EditorShowMode.MouseDown;
                 gv.OptionsSelection.EnableAppearanceFocusedCell = false;
                 gv.FocusRectStyle = DrawFocusRectStyle.RowFocus;
 
@@ -371,7 +377,7 @@ namespace CrawlFB_PW._1._0.Page
                                 continue;
                             var crawlPage = await Ads.Instance.OpenNewTabAsync(profile.IDAdbrowser);
                             Libary.Instance.SetProfileContext(profile.IDAdbrowser, profile.ProfileName);                           
-                            var result = await UpdatePostPageDAO.Instance.UpdatePostPageAsync(crawlPage, page.PageLink, pageId, page.TimeLastPost);
+                            var result = await UpdatePostPageDAO.Instance.UpdatePostPageAsync(crawlPage, page.PageLink, pageId, page.IDFBPage, page.PageName, page.TimeLastPost);
                             var posts = result.Posts;
                             var shares = result.Shares;                         
                             var postVMs = posts.Select(p => new PostInfoViewModel
@@ -383,10 +389,10 @@ namespace CrawlFB_PW._1._0.Page
                                 PosterName = p.PosterName,
                                 PosterLink = p.PosterLink,
                                 PosterNote = p.PosterNote,
-
+                                PosterIdFB = p.PosterIdFB,
                                 PageName = p.PageName,
                                 PageLink = p.PageLink,
-
+                                ContainerIdFB = p.ContainerIdFB,
                                 Like = p.LikeCount ?? 0,
                                 Comment = p.CommentCount ?? 0,
                                 Share = p.ShareCount ?? 0,
@@ -569,18 +575,27 @@ namespace CrawlFB_PW._1._0.Page
 
             sb.AppendLine("📝 POST RESULT");
             sb.AppendLine($"Page Chứa: {post.PageName}");
-            sb.AppendLine($"{Libary.IconOK} Poster: {post.PosterName}");
-            sb.AppendLine($"🔗 Link: {post.PostLink}");
-            sb.AppendLine($"⏱ Time: {post.PostTime}");
-            sb.AppendLine($"⏱ RealTime: {post.RealPostTime.ToString()}");
-            sb.AppendLine($"🧾 ContentLen: {post.Content?.Length ?? 0}");
-            string contentView = ProcessingHelper.PreviewText(post.Content);
-            sb.AppendLine($"⏱ ContentView: {post.Content}");
-            bool hasInteract =(post.LikeCount + post.CommentCount + post.ShareCount) > 0;
-            sb.AppendLine($"{Libary.BoolIcon(hasInteract)} Interact: " +
-                $"👍={post.LikeCount} 💬={post.CommentCount} 🔁={post.ShareCount}"
-            );
-            sb.AppendLine($"📌 Status: {post.PostType.ToString()}");
+            sb.AppendLine($"PageLink: {post.PageLink ?? "N/A"}");
+            sb.AppendLine($"PageID: {post.PageID ?? "N/A"}");
+            sb.AppendLine($"ContainerIdFB: {post.ContainerIdFB ?? "N/A"}");
+
+            sb.AppendLine($"Poster: {post.PosterName}");
+            sb.AppendLine($"PosterLink: {post.PosterLink ?? "N/A"}");
+            sb.AppendLine($"PosterIdFB: {post.PosterIdFB ?? "N/A"}");
+            sb.AppendLine($"PosterNote: {post.PosterNote ?? "N/A"}");
+
+            sb.AppendLine($"Link: {post.PostLink}");
+            sb.AppendLine($"Time: {post.PostTime}");
+            sb.AppendLine($"RealTime: {post.RealPostTime}");
+            sb.AppendLine($"PostType: {post.PostType}");
+
+            sb.AppendLine($"Like: {post.LikeCount ?? 0}");
+            sb.AppendLine($"Comment: {post.CommentCount ?? 0}");
+            sb.AppendLine($"Share: {post.ShareCount ?? 0}");
+
+            sb.AppendLine($"ContentLen: {post.Content?.Length ?? 0}");
+            sb.AppendLine($"Attachment: {post.Attachment ?? "N/A"}");
+
             Libary.Instance.LogForm(module, sb.ToString());
         }
     }

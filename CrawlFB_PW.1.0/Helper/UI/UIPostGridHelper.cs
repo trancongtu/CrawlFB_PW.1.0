@@ -184,18 +184,20 @@ public static class UIPostGridHelper
             {
                 string url = e.EditValue as string;
                 if (!string.IsNullOrWhiteSpace(url))
-                    System.Diagnostics.Process.Start(url);
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
+
+                    e.Handled = true; // ⭐ CHẶN DevExpress mở lần 2
+                }
             }
             catch { }
         };
 
         grid.RepositoryItems.Add(linkEdit);
-
-        // ===== GÁN COLUMNEDIT =====
-        foreach (var col in linkColumns)
-        {
-            col.ColumnEdit = linkEdit;
-        }
 
         // ===== HIỂN THỊ TEXT NGẮN =====
         gv.CustomColumnDisplayText += (s, e) =>

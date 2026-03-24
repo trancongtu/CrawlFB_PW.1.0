@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CrawlFB_PW._1._0.DAO.Page;
 using CrawlFB_PW._1._0.ViewModels;
+using DevExpress.Entity.Model;
 namespace CrawlFB_PW._1._0.DAO
 {
     public class FirstScanPostPageDAO
@@ -33,7 +34,8 @@ namespace CrawlFB_PW._1._0.DAO
         public async Task<PostResult> FirstScanAsync(
             IPage page,
             string url,
-            string pageId,
+            string pageIdCrawl,
+            string idFBPageCrawl,
             int maxPosts = 500
         )
         {
@@ -69,8 +71,19 @@ namespace CrawlFB_PW._1._0.DAO
                 }
 
                 bool isGroup = PageDAO.Instance.IsFacebookGroup(urlgoc);
-                string pageName = await PageDAO.Instance.GetPageNameAsync(page);
+                // Ưu tiên lấy từ DB trước
+                string pageName = "N/A";
 
+                var dbPage = SQLDAO.Instance.GetPageByID(pageIdCrawl);
+                if (dbPage != null && !string.IsNullOrWhiteSpace(dbPage.PageName) && dbPage.PageName != "N/A")
+                {
+                    pageName = dbPage.PageName;
+                }
+                else
+                {
+                    // fallback DOM nếu DB chưa có tên
+                    pageName = await PageDAO.Instance.GetPageNameAsync(page);
+                }
                 var crawlContext = isGroup
                     ? CrawlContext.Group
                     : CrawlContext.Fanpage;
@@ -93,21 +106,21 @@ namespace CrawlFB_PW._1._0.DAO
                 while (scrollRound < maxScrollRounds &&
                        result.Posts.Count < maxPosts)
                 {
-                    var nodes = await feed.QuerySelectorAllAsync(
-                        "div[class='x1n2onr6 x1ja2u2z']"
-                    );
+                    var nodes = await feed.QuerySelectorAllAsync("div[class='x1n2onr6 x1ja2u2z']");
 
                     for (int i = processedIndex; i < nodes.Count; i++)
                     {
                         var node = nodes[i];
 
                         PostResult pr = await CrawlPageDAO.Instance.CrawlPagePostAsync(
-                            page,
-                            node,
-                            pageName,
-                            urlgoc,
-                            crawlContext
-                        );
+                         page,
+                         node,
+                         pageName,
+                         urlgoc,
+                         crawlContext,
+                         pageIdCrawl,
+                         idFBPageCrawl
+                     );
 
                         if (pr == null)
                         {
@@ -166,11 +179,7 @@ namespace CrawlFB_PW._1._0.DAO
                     await page.WaitForTimeoutAsync(700);
                     scrollRound++;
                 }
-
-                Libary.Instance.CreateLog(
-                    "FirstScan",
-                    $"DONE | post={result.Posts.Count}, share={result.Shares.Count}"
-                );
+                Libary.Instance.CreateLog("FirstScan", $"DONE | post={result.Posts.Count}, share={result.Shares.Count}");
             }
             catch (Exception ex)
             {

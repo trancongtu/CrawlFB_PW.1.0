@@ -41,6 +41,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
             // ======================
             public string PageName { get; set; }        // tên page/group đang crawl
             public string PageLink { get; set; }
+            public string PageID { get; set; }
             // 🔥 thêm ngay từ đầu
             public string ContainerIdFB { get; set; } = "";
 
@@ -91,18 +92,24 @@ namespace CrawlFB_PW._1._0.DAO.Page
             public int LinkCount => LinkList?.Count ?? 0;
             public int PostInforCount => PostInfor?.Count ?? 0;
         }
-        public async Task<PostResult> CrawlPagePostAsync(IPage page,IElementHandle postNode,string pageName, string pageLink,CrawlContext context)
+        public async Task<PostResult> CrawlPagePostAsync(IPage page,IElementHandle postNode, string pageName,string pageLink,CrawlContext context, string pageIdCrawl,string idFBPageCrawl)
         {
-            var raw = await CollectRawInfoAsync(page, postNode, pageName, pageLink);
+            var raw = await CollectRawInfoAsync(
+                page,
+                postNode,
+                pageName,
+                pageLink,
+                pageIdCrawl,
+                idFBPageCrawl
+            );
             raw.Context = context;
-
             PostKind kind = DetectPostKind(raw);
             return await ParseByKindAsync(raw, kind);
         }
         // =====================================================
         // STEP 1 — COLLECT RAW INFO
         // =====================================================
-        public async Task<RawPostInfo> CollectRawInfoAsync(IPage page,IElementHandle postNode,string pageName,string pageLink)
+        public async Task<RawPostInfo> CollectRawInfoAsync(IPage page,IElementHandle postNode,string pageName,string pageLink,string pageIdCrawl,string idFBPageCrawl)
         {
             var raw = new RawPostInfo
             {
@@ -110,8 +117,8 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 PostNode = postNode,
                 PageName = pageName,
                 PageLink = pageLink,
-                ContainerIdFB =SQLDAO.Instance.GetFacebookIdByLink(pageLink)
-
+                PageID = string.IsNullOrWhiteSpace(pageIdCrawl) || pageIdCrawl == "N/A" ? null : pageIdCrawl,
+                ContainerIdFB = string.IsNullOrWhiteSpace(idFBPageCrawl) || idFBPageCrawl == "N/A" ? null : idFBPageCrawl
             };
             // ========================
             // CONTEXT (FANPAGE / GROUP)
@@ -291,6 +298,8 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 RealPostTime = TimeHelper.ParseFacebookTime(raw.PostTime),
                 PageName = raw.PageName,
                 PageLink = raw.PageLink,
+                PageID = raw.PageID,
+                ContainerIdFB = raw.ContainerIdFB,
                 PostType = PostType.Page_Normal
             };
             Libary.Instance.LogTech($"[ParseNormalPost] PostLink={info.PostLink} | PostTime={info.PostTime}");
@@ -301,6 +310,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
             {
                 info.PosterName = raw.PageName;
                 info.PosterLink = raw.PageLink;
+                info.PosterIdFB = raw.ContainerIdFB;
                 info.PosterNote = FBType.Fanpage;
                 Libary.Instance.LogTech("[ParseNormalPost] Poster = Fanpage (gán cứng)");
             }
@@ -340,8 +350,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
             // ========================
             // 3️⃣ XÁC ĐỊNH POST TYPE (FINAL)
             // ========================
-            bool hasContent =
-                ProcessingHelper.IsValidContent(info.Content);
+            bool hasContent = ProcessingHelper.IsValidContent(info.Content);
 
             if (raw.HasPhoto)
             {
@@ -365,12 +374,8 @@ namespace CrawlFB_PW._1._0.DAO.Page
             // ========================
             var postPage = BuildPostPage(info);
             result.Posts.Add(postPage);
-
-            Libary.Instance.LogTech(
-                $"[ParseNormalPost] ✅ ADD POST | Link={postPage.PostLink} | Type={postPage.PostType}");
-
+            Libary.Instance.LogTech($"[ParseNormalPost] ✅ ADD POST | Link={postPage.PostLink} | Type={postPage.PostType}");
             Libary.Instance.LogTech("[ParseNormalPost] ◀ End | Normal post OK");
-
             return result;
         }
         //===================
@@ -397,7 +402,9 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 PostTime = raw.PostTime,
                 RealPostTime = TimeHelper.ParseFacebookTime(raw.PostTime),
                 PageName = raw.PageName,
-                PageLink = raw.PageLink
+                PageLink = raw.PageLink,
+                PageID = raw.PageID,
+                ContainerIdFB = raw.ContainerIdFB
             };
 
             // =================================================
@@ -408,6 +415,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 info.PosterName = raw.PageName;
                 info.PosterLink = raw.PageLink;
                 info.PosterNote = FBType.Fanpage;
+                info.PosterIdFB = raw.ContainerIdFB;
             }
             else
             {
@@ -482,6 +490,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 RealPostTime = TimeHelper.ParseFacebookTime(raw.PostTime),
                 PageName = raw.PageName,
                 PageLink = raw.PageLink,
+                PageID = raw.PageID,
                 ContainerIdFB = raw.ContainerIdFB
             };
 
@@ -490,6 +499,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
             {
                 infoA.PosterName = raw.PageName;
                 infoA.PosterLink = raw.PageLink;
+                infoA.PosterIdFB = raw.ContainerIdFB;
                 infoA.PosterNote = FBType.Fanpage;
             }
             else
@@ -521,6 +531,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
             if (mode == ShareMode.Reel)
             {
                 Libary.Instance.LogTech("[Share-B] Open REEL original (NEW FLOW)");
+
                 await CrawlPostReelDAO.Instance.OpenReelShareAndInitVMAsync(page, infoB);
                 postB = BuildPostPage(infoB);
             }
@@ -973,16 +984,25 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 PosterName = info.PosterName,
                 PosterLink = info.PosterLink,
                 PosterNote = info.PosterNote.ToString(),
+                PosterIdFB = string.IsNullOrWhiteSpace(info.PosterIdFB) || info.PosterIdFB == "N/A"
+                    ? null
+                    : info.PosterIdFB,
 
                 PageName = info.PageName,
                 PageLink = info.PageLink,
+                PageID = string.IsNullOrWhiteSpace(info.PageID) || info.PageID == "N/A"
+                    ? null
+                    : info.PageID,
+                ContainerIdFB = string.IsNullOrWhiteSpace(info.ContainerIdFB) || info.ContainerIdFB == "N/A"
+                    ? null
+                    : info.ContainerIdFB,
 
                 Content = info.Content,
 
                 LikeCount = info.LikeCount,
                 CommentCount = info.CommentCount,
                 ShareCount = info.ShareCount,
-                Attachment = info.AttachmentJson,   // JSON string để lưu DB
+                Attachment = info.AttachmentJson,
                 PostType = info.PostType.ToString()
             };
         }
