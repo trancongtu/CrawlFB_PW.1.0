@@ -23,9 +23,9 @@ namespace CrawlFB_PW._1._0.ViewModels
         public PostType PostType { get; set; } = PostType.Page_Unknow;
 
         // ===== INTERACTION =====
-        public int LikeCount { get; set; }
-        public int CommentCount { get; set; }
-        public int ShareCount { get; set; }
+        public int? LikeCount { get; set; }
+        public int? CommentCount { get; set; }
+        public int? ShareCount { get; set; }
 
         // ===== CONTEXT =====
         public string PageName { get; set; }
@@ -33,7 +33,6 @@ namespace CrawlFB_PW._1._0.ViewModels
         public string PageID { get; set; }
         public string AttachmentJson { get; set; }
         public FBType ContainerType { get; set; } = FBType.Unknown;
-
         public string ContainerIdFB { get; set; }
         public string PosterIdFB { get; set; }
     }

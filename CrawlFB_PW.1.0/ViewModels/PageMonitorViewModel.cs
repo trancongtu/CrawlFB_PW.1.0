@@ -28,14 +28,21 @@ namespace CrawlFB_PW._1._0.ViewModels
             get => _postScan;
             set { _postScan = value; OnPropertyChanged(nameof(PostScan)); }
         }
-
+        private int _postSaved;
+        public int PostSaved
+        {
+            get => _postSaved;
+            set { _postSaved = value; OnPropertyChanged(nameof(PostSaved)); }
+        }
+        public int Countdown { get; set; }
+        public int DelayExtra { get; set; } // 🔥 delay tăng thêm
         private DateTime? _lastScanTime;
         public DateTime? LastScanTime
         {
             get => _lastScanTime;
             set { _lastScanTime = value; OnPropertyChanged(nameof(LastScanTime)); }
         }
-
+        public DateTime? TimeLastPost { get; set; }
         // 🔥 realtime chạy
         public DateTime? StartRunTime { get; set; }
 

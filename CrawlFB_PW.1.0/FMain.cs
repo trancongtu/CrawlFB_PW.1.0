@@ -106,16 +106,23 @@ namespace CrawlFB_PW._1._0
         }
         private void FormMain_Load(object sender, EventArgs e)
         {
-
             if (!SQLDAO.Instance.TestConnection())
             {
                 MessageBox.Show("Không kết nối được SQL Server!");
                 return;
             }
+
+            // 🔥 1. Tạo bảng chính
             SQLDAO.Instance.CreateTableAuto();
+
+            // 🔥 2. Tạo bảng phụ (evaluation của bạn)
             SQLDAO.Instance.EnsureEvaluationTables();
 
-            // Kết nối OK → tạo bảng
+            // 🔥 3. Tạo temp table (V3)
+            SQLDAO.Instance.EnsureTempTables();
+
+            // 🔥 4. Clear temp (rất quan trọng)
+            SQLDAO.Instance.ClearTempTables();
         }
         private void barbtnScanOnePage_ItemClick(object sender, ItemClickEventArgs e)
         {
@@ -124,7 +131,7 @@ namespace CrawlFB_PW._1._0
 
         private void barbtnGiamsatPage_ItemClick(object sender, ItemClickEventArgs e)
         {
-            OpenMdiForm<FAutoSupervisePage>();
+          
         }
 
         private void btnViewDatabase_ItemClick(object sender, ItemClickEventArgs e)
@@ -139,7 +146,7 @@ namespace CrawlFB_PW._1._0
 
         private void barButtonItemNewAuto_ItemClick(object sender, ItemClickEventArgs e)
         {
-            OpenMdiForm<FAutoCrawlPageMonitor>();
+            OpenMdiForm<FAutoCrawlPageMonitorAdmin>();
         }
 
         private void btnAddPage_ItemClick(object sender, ItemClickEventArgs e)

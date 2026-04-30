@@ -19,6 +19,8 @@ using CrawlFB_PW._1._0.Enums;
 using CrawlFB_PW._1._0.ViewModels;
 using System.Data.Common;
 using CrawlFB_PW._1._0.DAO.phantich;
+using CrawlFB_PW._1._0.DAO.Data;
+using CrawlFB_PW._1._0.Helper.Data;
 //using DevExpress.XtraPrinting;
 
 public class SQLDAO
@@ -356,6 +358,15 @@ public class SQLDAO
             cmd.Parameters.AddWithValue(p.Key, p.Value ?? DBNull.Value);
         }
     }
+    public T ExecuteScalar<T>(string sql, Dictionary<string, object> parameters)
+    {
+        var result = ExecuteScalar(sql, parameters);
+
+        if (result == null || result == DBNull.Value)
+            return default(T);
+
+        return (T)Convert.ChangeType(result, typeof(T));
+    }
 
     //===============
     // HÀM TẠO TABLE
@@ -650,6 +661,143 @@ public class SQLDAO
         }
     }
     //===================
+    public void EnsureTempTables()
+    {
+        using (var conn = new SqlConnection(_connectionString))
+        {
+            conn.Open();
+
+            var sql = @"
+
+                --------------------------------------------------------
+                -- POST TEMP (CHỈ FIELD CẦN INSERT)
+                --------------------------------------------------------
+                IF OBJECT_ID('TablePostInfo_Temp', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE TablePostInfo_Temp (
+                        PostID NVARCHAR(200),
+                        PostLink NVARCHAR(MAX),
+                        PostContent NVARCHAR(MAX),
+                        PostTime NVARCHAR(200),
+                        RealPostTime DATETIME2(0),
+                        LikeCount INT,
+                        ShareCount INT,
+                        CommentCount INT,
+                        PostAttachment NVARCHAR(MAX),
+                        PostStatus NVARCHAR(200)
+                    );
+                END
+
+                --------------------------------------------------------
+                -- PAGE TEMP
+                --------------------------------------------------------
+                IF OBJECT_ID('TablePageInfo_Temp', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE TablePageInfo_Temp (
+                        PageID NVARCHAR(200),
+                        IDFBPage NVARCHAR(200),
+                        PageLink NVARCHAR(MAX),
+                        PageName NVARCHAR(500)
+                    );
+                END
+
+                --------------------------------------------------------
+                -- PERSON TEMP
+                --------------------------------------------------------
+                IF OBJECT_ID('TablePersonInfo_Temp', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE TablePersonInfo_Temp (
+                        PersonID NVARCHAR(200),
+                        PersonLink NVARCHAR(MAX),
+                        PersonName NVARCHAR(500),
+                        PersonNote NVARCHAR(MAX)
+                    );
+                END
+
+                --------------------------------------------------------
+                -- POST MAP TEMP
+                --------------------------------------------------------
+                IF OBJECT_ID('TablePost_Temp', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE TablePost_Temp (
+                        PostID NVARCHAR(200),
+                        PageIDCreate NVARCHAR(200),
+                        PageIDContainer NVARCHAR(200),
+                        PersonIDCreate NVARCHAR(200)
+                    );
+                END
+
+                --------------------------------------------------------
+                -- SHARE TEMP
+                --------------------------------------------------------
+                IF OBJECT_ID('TablePostShare_Temp', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE TablePostShare_Temp (
+                        PostID NVARCHAR(200),
+                        PageID NVARCHAR(200),
+                        PersonID NVARCHAR(200),
+                        TimeShare NVARCHAR(200),
+                        RealTimeShare DATETIME2(0)
+                    );
+                END
+                                --------------------------------------------------------
+                -- SEED DATA MẶC ĐỊNH
+                --------------------------------------------------------
+
+                IF NOT EXISTS (
+                    SELECT 1 FROM TablePersonInfo 
+                    WHERE PersonID = '00000000'
+                )
+                BEGIN
+                    INSERT INTO TablePersonInfo (PersonID, PersonName)
+                    VALUES ('00000000', N'Ẩn danh');
+                END
+
+                ";
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.ExecuteNonQuery();
+            }
+        }
+    }
+    public void ClearTempTables()
+    {
+        try
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                var sql = @"
+
+IF OBJECT_ID('TablePostInfo_Temp', 'U') IS NOT NULL
+    TRUNCATE TABLE TablePostInfo_Temp;
+
+IF OBJECT_ID('TablePageInfo_Temp', 'U') IS NOT NULL
+    TRUNCATE TABLE TablePageInfo_Temp;
+
+IF OBJECT_ID('TablePersonInfo_Temp', 'U') IS NOT NULL
+    TRUNCATE TABLE TablePersonInfo_Temp;
+
+IF OBJECT_ID('TablePost_Temp', 'U') IS NOT NULL
+    TRUNCATE TABLE TablePost_Temp;
+
+IF OBJECT_ID('TablePostShare_Temp', 'U') IS NOT NULL
+    TRUNCATE TABLE TablePostShare_Temp;
+
+";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ ClearTempTables error: " + ex.Message);
+        }
+    }
     public void EnsureEvaluationTables()
     {
         string sql = @"
@@ -861,6 +1009,28 @@ public class SQLDAO
         SQLDAO.Instance.ExecuteNonQuery(sql,
             new Dictionary<string, object> { { "@id", postId } });
     }
+    public int DeletePosts(List<string> postIds)
+    {
+        if (postIds == null || postIds.Count == 0)
+            return 0;
+
+        var param = new Dictionary<string, object>();
+        var paramNames = new List<string>();
+
+        for (int i = 0; i < postIds.Count; i++)
+        {
+            string key = "@id" + i;
+            paramNames.Add(key);
+            param[key] = postIds[i];
+        }
+
+        string sql = $@"
+DELETE FROM TablePostInfo WHERE PostID IN ({string.Join(",", paramNames)});
+DELETE FROM TablePost WHERE PostID IN ({string.Join(",", paramNames)});
+";
+
+        return SQLDAO.Instance.ExecuteNonQuery(sql, param);
+    }
     // xóa toàn bộ post và các bảng liên quan
     public void DeleteAllPosts()
     {
@@ -929,185 +1099,7 @@ public class SQLDAO
 
             tran.Commit();
         }
-    }
-    /*
-    public void InsertOrIgnorePost(PostPage p)
-    {
-        if (p == null || string.IsNullOrWhiteSpace(p.PostLink))
-            return;
-
-        string postId = GeneratePostId(p.PostLink);
-
-        // =========================
-        // XÁC ĐỊNH PAGE / PERSON
-        // =========================
-
-        string pageContainerId = null;
-        if (!string.IsNullOrWhiteSpace(p.PageLink))
-        {
-            (pageContainerId, _) = CheckPageLink(p.PageLink);
-        }              
-        string posterPageId = null;
-        string posterPersonId = null;
-        if (!string.IsNullOrWhiteSpace(p.PosterLink))
-        {
-            bool isPagePoster = !string.IsNullOrEmpty(p.PosterNote) && p.PosterNote.ToLower().Contains("page");
-
-            if (isPagePoster)
-                (posterPageId, _) = CheckPageLink(p.PosterLink);
-            else
-                posterPersonId = GenerateHashId(p.PosterLink);
-        }
-        if (!string.IsNullOrEmpty(posterPageId) && posterPageId == pageContainerId)
-        {
-            posterPageId = null;
-        }
-        // =========================
-        // REAL POST TIME
-        // =========================
-        DateTime? parsedTime = TimeHelper.ParseFacebookTime(p.PostTime);
-        object realPostTime = parsedTime == DateTime.MinValue ? (object)DBNull.Value : parsedTime;
-        using (var conn = SQLDAO.Instance.OpenConnection())
-        using (var tran = conn.BeginTransaction())
-        using (var cmd = new SqlCommand())
-        {
-            cmd.Connection = conn;
-            cmd.Transaction = tran;
-            try
-            {
-                // =========================
-                // 1️⃣ PAGE CONTAINER
-                // =========================
-                if (pageContainerId != null)
-                {
-                    cmd.CommandText = @"
-                                MERGE TablePageInfo t
-                USING (SELECT @link AS PageLink) s
-                ON t.PageLink = s.PageLink
-                WHEN NOT MATCHED THEN
-                    INSERT (PageID, PageLink, PageName, PageType, PageTimeSave)
-                    VALUES (@id, @link, @name, @type, SYSDATETIME());
-                ";
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = pageContainerId;
-                    cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = p.PageLink ?? "";
-                    cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = p.PageName ?? "";
-                    cmd.Parameters.Add("@type", SqlDbType.NVarChar, 50).Value =
-                        p.PageLink.Contains("/groups/") ? "groups" : "fanpage";
-                    cmd.ExecuteNonQuery();
-                }
-
-                // =========================
-                // 2️⃣ PAGE POSTER
-                // =========================
-                if (posterPageId != null)
-                {
-                    cmd.CommandText = @"
-                                MERGE TablePageInfo t
-                USING (SELECT @link AS PageLink) s
-                ON t.PageLink = s.PageLink
-                WHEN NOT MATCHED THEN
-                    INSERT (PageID, PageLink, PageName, PageType, PageTimeSave)
-                    VALUES (@id, @link, @name, @type, SYSDATETIME());
-                "; 
-
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = posterPageId;
-                    cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = p.PosterLink ?? "";
-                    cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = p.PosterName ?? "";
-                    cmd.Parameters.Add("@type", SqlDbType.NVarChar, 50).Value = p.PageLink.Contains("/groups/") ? "groups" : "fanpage";
-                    cmd.ExecuteNonQuery();
-                }
-
-                // =========================
-                // 3️⃣ PERSON POSTER
-                // =========================
-                if (posterPersonId != null)
-                {
-                    cmd.CommandText = @"
-                IF NOT EXISTS (SELECT 1 FROM TablePersonInfo WHERE PersonID=@id)
-                INSERT INTO TablePersonInfo(PersonID, PersonLink, PersonName, PersonNote, PersonTimeSave)
-                VALUES (@id, @link, @name, @note, SYSDATETIME());";
-
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = posterPersonId;
-                    cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = p.PosterLink ?? "";
-                    cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = p.PosterName ?? "";
-                    cmd.Parameters.Add("@note", SqlDbType.NVarChar).Value = p.PosterNote ?? "";
-
-                    cmd.ExecuteNonQuery();
-                }
-
-                // =========================
-                // 4️⃣ POST INFO (MERGE)
-                // =========================
-                cmd.CommandText = @"
-                MERGE TablePostInfo t
-                USING (SELECT @id AS PostID) s
-                ON t.PostID = s.PostID
-                WHEN MATCHED THEN 
-                    UPDATE SET 
-                        PostLink=@link,
-                        PostContent=@content,
-                        PostTime=@timeRaw,
-                        RealPostTime=@timeReal,
-                        LikeCount=@like,
-                        ShareCount=@share,
-                        CommentCount=@comment,
-                        PostAttachment=@attachment,
-                        PostStatus=@status,
-                        PostTimeSave=SYSDATETIME()
-                WHEN NOT MATCHED THEN
-                    INSERT (PostID, PostLink, PostContent, PostTime, RealPostTime,
-                            LikeCount, ShareCount, CommentCount, PostAttachment, PostStatus, PostTimeSave)
-                    VALUES(@id,@link,@content,@timeRaw,@timeReal,
-                           @like,@share,@comment,@attachment,@status,SYSDATETIME());";
-
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = postId;
-                cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = p.PostLink ?? "";
-                cmd.Parameters.Add("@content", SqlDbType.NVarChar).Value = p.Content ?? "";
-                cmd.Parameters.Add("@timeRaw", SqlDbType.NVarChar, 200).Value = p.PostTime ?? "";
-                cmd.Parameters.Add("@timeReal", SqlDbType.DateTime2).Value = realPostTime;
-                cmd.Parameters.Add("@like", SqlDbType.Int).Value = p.LikeCount ?? 0;
-                cmd.Parameters.Add("@share", SqlDbType.Int).Value = p.ShareCount ?? 0;
-                cmd.Parameters.Add("@comment", SqlDbType.Int).Value = p.CommentCount ?? 0;
-                cmd.Parameters.Add("@attachment", SqlDbType.NVarChar).Value = p.Attachment ?? "";
-                cmd.Parameters.Add("@status", SqlDbType.NVarChar, 200).Value = p.PostType ?? "";
-
-                cmd.ExecuteNonQuery();
-
-                // =========================
-                // 5️⃣ POST MAP
-                // =========================
-                if (posterPageId == null && posterPersonId == null && pageContainerId != null)
-                {
-                    posterPageId = pageContainerId;
-                }
-                cmd.CommandText = @"
-                IF NOT EXISTS (SELECT 1 FROM TablePost WHERE PostID=@id)
-                INSERT INTO TablePost(PostID, PageIDCreate, PageIDContainer, PersonIDCreate)
-                VALUES(@id, @createPage, @containerPage, @createPerson);";
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = postId;
-                cmd.Parameters.Add("@createPage", SqlDbType.NVarChar, 200)
-                    .Value = (object)posterPageId ?? DBNull.Value;
-                cmd.Parameters.Add("@containerPage", SqlDbType.NVarChar, 200)
-                    .Value = (object)pageContainerId ?? DBNull.Value;
-                cmd.Parameters.Add("@createPerson", SqlDbType.NVarChar, 200)
-                    .Value = (object)posterPersonId ?? DBNull.Value;
-
-                cmd.ExecuteNonQuery();
-
-                tran.Commit();
-            }
-            catch
-            {
-                tran.Rollback();
-                throw;
-            }
-        }
-    }*/
+    } 
     public void InsertOrIgnorePost(PostPage p)
     {
         if (p == null || !ProcessingHelper.IsValidContent(p.PostLink))
@@ -1227,18 +1219,14 @@ public class SQLDAO
                     p.PageLink,
                     p.PageName
                 );
-                Libary.Instance.LogTech(
-    $"[DB-RESOLVE] Post={postId} | ContainerID={pageContainerId} | RawContainer={p.ContainerIdFB} | PageLink={p.PageLink}"
-);
+                Libary.Instance.LogTech($"[DB-RESOLVE] Post={postId} | ContainerID={pageContainerId} | RawContainer={p.ContainerIdFB} | PageLink={p.PageLink}");
                 // =================================================
                 // 2️⃣ POSTER
                 // =================================================
                 string posterPageId = null;
                 string posterPersonId = null;
 
-                bool isPagePoster =
-                    !string.IsNullOrWhiteSpace(p.PosterNote) &&
-                    p.PosterNote.ToLower().Contains("page");
+                bool isPagePoster = p.PosterNote == FBType.Fanpage;
 
                 if (isPagePoster)
                 {
@@ -1250,7 +1238,11 @@ public class SQLDAO
                 }
                 else
                 {
-                    if (ProcessingHelper.IsValidContent(p.PosterIdFB))
+                    if (p.PosterNote == FBType.PersonHidden)
+                    {
+                        posterPersonId = SystemIds.PERSON_ANONYMOUS_ID;
+                    }
+                    else if (ProcessingHelper.IsValidContent(p.PosterIdFB))
                     {
                         posterPersonId = p.PosterIdFB;
 
@@ -1259,19 +1251,16 @@ public class SQLDAO
                         INSERT INTO TablePersonInfo
                         (PersonID, PersonLink, PersonName, PersonNote, PersonTimeSave)
                         VALUES (@id,@link,@name,@note,SYSDATETIME());";
-
                         cmd.Parameters.Clear();
                         cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = posterPersonId;
                         cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = p.PosterLink ?? "";
                         cmd.Parameters.Add("@name", SqlDbType.NVarChar, 500).Value = p.PosterName ?? "";
-                        cmd.Parameters.Add("@note", SqlDbType.NVarChar).Value = p.PosterNote ?? "";
+                        cmd.Parameters.Add("@note", SqlDbType.NVarChar).Value = p.PosterNote;
 
                         cmd.ExecuteNonQuery();
                     }
                 }
-                Libary.Instance.LogTech(
-    $"[DB-POSTER] Post={postId} | PosterPage={posterPageId} | PosterPerson={posterPersonId} | Note={p.PosterNote}"
-);
+                Libary.Instance.LogTech($"[DB-POSTER] Post={postId} | PosterPage={posterPageId} | PosterPerson={posterPersonId} | Note={p.PosterNote}");
                 // =================================================
                 // 3️⃣ REAL TIME
                 // =================================================
@@ -1320,7 +1309,7 @@ public class SQLDAO
                 cmd.Parameters.Add("@share", SqlDbType.Int).Value = p.ShareCount ?? 0;
                 cmd.Parameters.Add("@comment", SqlDbType.Int).Value = p.CommentCount ?? 0;
                 cmd.Parameters.Add("@attachment", SqlDbType.NVarChar).Value = p.Attachment ?? "";
-                cmd.Parameters.Add("@status", SqlDbType.NVarChar, 200).Value = p.PostType ?? "";
+                cmd.Parameters.Add("@status", SqlDbType.NVarChar, 200).Value = p.PostType.ToString();
 
                 cmd.ExecuteNonQuery();
 
@@ -1362,7 +1351,598 @@ public class SQLDAO
             }
         }
     }
+    // dùng save post Auto 
+    public int InsertPostBatchAuto(List<PostPage> posts)
+    {
+        if (posts == null || posts.Count == 0)
+            return 0;
 
+        int saved = 0;
+
+        using (var conn = new SqlConnection(_connectionString))
+        {
+            conn.Open();
+
+            using (var tran = conn.BeginTransaction())
+            using (var cmd = new SqlCommand())
+            {
+                cmd.Connection = conn;
+                cmd.Transaction = tran;
+
+                try
+                {
+                    cmd.CommandText = @"
+                IF NOT EXISTS (SELECT 1 FROM TablePostInfo WHERE PostID = @id)
+                BEGIN
+                    INSERT INTO TablePostInfo
+                    (
+                        PostID, PostLink, PostContent,
+                        PostTime, RealPostTime,
+                        LikeCount, ShareCount, CommentCount,
+                        PostAttachment, PostStatus, PostTimeSave
+                    )
+                    VALUES
+                    (
+                        @id, @link, @content,
+                        @timeRaw, @timeReal,
+                        @like, @share, @comment,
+                        @attachment, @status, SYSDATETIME()
+                    )
+                END
+                ";
+
+                    foreach (var p in posts)
+                    {
+                        if (p == null || string.IsNullOrEmpty(p.PostLink))
+                            continue;
+
+                        string postId = GeneratePostId(p.PostLink);
+
+                        DateTime? parsedTime = p.RealPostTime ??
+                                               TimeHelper.ParseFacebookTime(p.PostTime);
+
+                        cmd.Parameters.Clear();
+
+                        cmd.Parameters.AddWithValue("@id", postId);
+                        cmd.Parameters.AddWithValue("@link", p.PostLink ?? "");
+                        cmd.Parameters.AddWithValue("@content", p.Content ?? "");
+                        cmd.Parameters.AddWithValue("@timeRaw", p.PostTime ?? "");
+                        cmd.Parameters.AddWithValue("@timeReal",
+                            parsedTime ?? (object)DBNull.Value);
+
+                        cmd.Parameters.AddWithValue("@like", p.LikeCount ?? 0);
+                        cmd.Parameters.AddWithValue("@share", p.ShareCount ?? 0);
+                        cmd.Parameters.AddWithValue("@comment", p.CommentCount ?? 0);
+
+                        cmd.Parameters.AddWithValue("@attachment", p.Attachment ?? "");
+                        cmd.Parameters.AddWithValue("@status", p.PostType.ToString());
+
+                        cmd.ExecuteNonQuery();
+
+                        saved++;
+                    }
+
+                    tran.Commit();
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    Libary.Instance.LogTech("❌ InsertPostBatchAuto ERROR: " + ex.Message);
+                }
+            }
+        }
+
+        return saved;
+    }
+    // V2
+    
+    public int InsertPostBatchAuto_V3(
+    List<PostPage> posts,
+    List<ShareItem> shares,
+    string pageCrawlId,
+    string pageCrawlLink)
+    {
+        if (posts == null || posts.Count == 0) return 0;
+
+        using (var conn = new SqlConnection(_connectionString))
+        {
+            conn.Open();
+
+            // =========================================
+            // 1. FILTER + POSTID
+            // =========================================
+            var validPosts = posts
+                .Where(p => !string.IsNullOrEmpty(p.PostLink))
+                .ToList();
+
+            var postIdMap = validPosts.ToDictionary(
+                p => p,
+                p => GeneratePostId(
+                    UrlHelper.ShortenFacebookPostLink(p.PostLink)
+                )
+            );
+
+            // =========================================
+            // 2. LOAD EXISTING POST
+            // =========================================
+            var existing = SqlBulkHelper.LoadExistingPostIds(conn, postIdMap.Values.ToList());
+
+            var newPosts = validPosts
+                .Where(p => !existing.Contains(postIdMap[p]))
+                .ToList();
+
+            if (newPosts.Count == 0) return 0;
+
+            // =========================================
+            // 3. 🔥 RESOLVE PAGE + PERSON (QUAN TRỌNG NHẤT)
+            // =========================================
+            var pageMap = new Dictionary<string, string>();
+            var pageResolveCache = new Dictionary<string, string>();
+            var personMap = new Dictionary<string, string>();
+            var personResolveCache = new Dictionary<string, string>();
+            // 🔥 seed anonymous
+            personMap[SystemIds.PERSON_ANONYMOUS_ID] = SystemIds.PERSON_ANONYMOUS_ID;
+
+            foreach (var p in newPosts)
+            {
+                Libary.Instance.LogForm("savelog",
+    $"[INPUT] Link={p.PostLink} | PosterIdFB='{p.PosterIdFB}' | PosterLink='{p.PosterLink}' | PosterNote={p.PosterNote}");
+                // =========================================
+                // 🔥 PAGE CONTAINER
+                // =========================================
+                string containerKey = !string.IsNullOrEmpty(p.ContainerIdFB)
+                    ? p.ContainerIdFB
+                    : UrlHelper.NormalizeFacebookUrl(p.PageLink);
+
+                if (!string.IsNullOrEmpty(containerKey) && !pageMap.ContainsKey(containerKey))
+                {
+                    if (!pageResolveCache.TryGetValue(containerKey, out var pageId))
+                    {
+                        pageId = SQLDAO.Instance.ResolvePageId(p.ContainerIdFB, p.PageLink);
+                        pageResolveCache[containerKey] = pageId;
+                    }
+
+                    pageMap[containerKey] = pageId;
+                }
+                Libary.Instance.LogForm("savelog", $"[DEBUG] Fanpage detected | PosterId={p.PosterIdFB} , PosterNote = {p.PosterNote}");
+                // =========================================
+                // 🔥 POSTER
+                // =========================================
+                if (string.IsNullOrEmpty(p.PosterIdFB) && string.IsNullOrEmpty(p.PosterLink) && p.PosterNote != FBType.PersonHidden && p.PosterNote != FBType.Unknown)
+                    continue;
+                if (p.PosterNote == FBType.PersonHidden || p.PosterNote == FBType.Unknown)
+                {
+                    p.PosterIdFB = SystemIds.PERSON_ANONYMOUS_ID;
+                }
+                switch (p.PosterNote)
+                {
+                    // =========================
+                    // 🔥 FANPAGE
+                    // =========================
+                    case FBType.Fanpage:
+                        {
+                            string pagekey = p.PosterIdFB;
+                            if (!string.IsNullOrEmpty(pagekey) && !pageMap.ContainsKey(pagekey))
+                            {
+                                if (!pageResolveCache.TryGetValue(pagekey, out var pageId))
+                                {
+                                    pageId = SQLDAO.Instance.ResolvePageId(p.PosterIdFB, p.PosterLink);
+                                    pageResolveCache[pagekey] = pageId;
+                                }
+                                pageMap[pagekey] = pageId;
+                                Libary.Instance.LogForm("savelog",$"[PAGE_MAP_ADD] Fanpage {pagekey} → {pageId}");
+                            }
+                            break;
+                        }
+
+                    // =========================
+                    // 🔥 PERSON
+                    // =========================
+                    case FBType.Person:
+                    case FBType.PersonKOL:
+                        {
+                            string key = !string.IsNullOrEmpty(p.PosterIdFB)
+                                ? p.PosterIdFB
+                                : UrlHelper.NormalizeFacebookUrl(p.PosterLink);
+
+                            if (!personMap.ContainsKey(key))
+                            {
+                                if (!personResolveCache.TryGetValue(key, out var personId))
+                                {
+                                    personId = SQLDAO.Instance.ResolvePersonId(p.PosterIdFB, p.PosterLink);
+                                    personResolveCache[key] = personId;
+                                }
+
+                                personMap[key] = personId;
+                            }
+                            break;
+                        }
+
+                    // =========================
+                    // 🔥 ANONYMOUS / UNKNOWN
+                    // =========================
+                    case FBType.PersonHidden:
+                    case FBType.Unknown:
+                        {
+                            string key = SystemIds.PERSON_ANONYMOUS_ID;
+
+                            if (!personMap.ContainsKey(key))
+                            {
+                                personMap[key] = SystemIds.PERSON_ANONYMOUS_ID;
+                            }
+
+                            break;
+                        }
+                }
+            }
+            Libary.Instance.LogForm("savelog", $"[PAGE_MAP] Count = {pageMap.Count}");
+
+            foreach (var kv in pageMap)
+            {
+                Libary.Instance.LogForm("savelog", $"[PAGE_MAP] Key: {kv.Key} | PageId: {kv.Value}");
+            }
+
+            // =========================================
+            // 4. BUILD DATATABLE
+            // =========================================
+            var builder = new PostBatchBuilder();
+
+            var dtPost = builder.BuildPostTable(newPosts, postIdMap);
+
+            var dtPage = builder.BuildPageTable(newPosts, pageMap);
+
+            var dtPerson = builder.BuildPersonTable( personMap, newPosts );
+
+            var dtMap = builder.BuildPostMapTable_V4(
+                newPosts,
+                postIdMap,
+                pageMap,
+                personMap,
+                pageCrawlId
+            );
+           
+            // =========================================
+            // 5. MAP SHARE
+            // =========================================
+            if (shares != null && shares.Count > 0)
+            {
+                foreach (var share in shares)
+                {
+                    var post = validPosts.FirstOrDefault(p =>
+                        UrlHelper.ShortenFacebookPostLink(p.PostLink) ==
+                        UrlHelper.ShortenFacebookPostLink(share.PostLinkB));
+
+                    if (post != null)
+                    {
+                        share.PostID_B = postIdMap[post];
+                    }
+                }
+            }
+
+            var dtShare = builder.BuildShareTable(shares);
+
+            // =========================================
+            // 6. BULK COPY
+            // =========================================
+            SqlBulkHelper.BulkCopy(conn, "TablePostInfo_Temp", dtPost);
+            SqlBulkHelper.BulkCopy(conn, "TablePageInfo_Temp", dtPage);
+            SqlBulkHelper.BulkCopy(conn, "TablePersonInfo_Temp", dtPerson);
+            SqlBulkHelper.BulkCopy(conn, "TablePost_Temp", dtMap);
+            SqlBulkHelper.BulkCopy(conn, "TablePostShare_Temp", dtShare);
+
+            // =========================================
+            // 7. MERGE
+            // =========================================
+            ExecuteMerge(conn);
+
+            return newPosts.Count;
+        }
+    }
+    public string ResolvePageId(string idfb, string link)
+    {
+        var normalizedLink = UrlHelper.NormalizeFacebookUrl(link);
+
+        // =========================================
+        // 🔥 1. Có IDFB → check DB theo IDFB
+        // =========================================
+        if (!string.IsNullOrEmpty(idfb))
+        {
+            var page = GetPageByIDFB(idfb);
+            if (page != null)
+                return page.PageID;
+        }
+
+        // =========================================
+        // 🔥 2. Check DB theo LINK (QUAN TRỌNG)
+        // =========================================
+        if (!string.IsNullOrEmpty(normalizedLink))
+        {
+            var page = GetPageByLink(normalizedLink); // 👈 bạn cần có hàm này
+            if (page != null)
+                return page.PageID;
+        }
+
+        // =========================================
+        // 🔥 3. Nếu có IDFB → dùng IDFB
+        // =========================================
+        if (!string.IsNullOrEmpty(idfb))
+        {
+            return idfb;
+        }
+
+        // =========================================
+        // 🔥 4. Không có IDFB → hash LINK
+        // =========================================
+        if (!string.IsNullOrEmpty(normalizedLink))
+        {
+            return GenerateStableId(normalizedLink);
+        }
+
+        return null;
+    }
+    public string ResolvePersonId(string idfb, string link)
+    {
+        var normalizedLink = UrlHelper.NormalizeFacebookUrl(link);
+
+        // 🔥 1. ưu tiên IDFB
+        if (!string.IsNullOrEmpty(idfb))
+        {
+            var person = GetPersonByID(idfb);
+            if (person != null)
+                return person.PersonID;
+        }
+
+        // 🔥 2. check theo link
+        if (!string.IsNullOrEmpty(normalizedLink))
+        {
+            var person = GetPersonByLink(normalizedLink);
+            if (person != null)
+                return person.PersonID;
+        }
+
+        // 🔥 3. fallback
+        if (!string.IsNullOrEmpty(idfb))
+            return idfb;
+
+        if (!string.IsNullOrEmpty(normalizedLink))
+            return GenerateStableId(normalizedLink);
+
+        return SystemIds.PERSON_ANONYMOUS_ID;
+    }
+    public PageInfo GetPageByLink(string link)
+    {
+        const string sql = @"
+        SELECT TOP 1 *
+        FROM TablePageInfo
+        WHERE PageLink = @link
+    ";
+
+        using (var conn = OpenConnection())
+        using (var cmd = new SqlCommand(sql, conn))
+        {
+            cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = link;
+
+            using (var rd = cmd.ExecuteReader())
+            {
+                if (rd.Read())
+                {
+                    return new PageInfo
+                    {
+                        PageID = rd["PageID"].ToString(),
+                        IDFBPage = rd["IDFBPage"]?.ToString(),
+                        PageLink = rd["PageLink"]?.ToString(),
+                        PageName = rd["PageName"]?.ToString()
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+    public static string GenerateStableId(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return Guid.NewGuid().ToString("N").Substring(0, 16);
+
+        using (var sha1 = System.Security.Cryptography.SHA1.Create())
+        {
+            var bytes = Encoding.UTF8.GetBytes(input.Trim().ToLowerInvariant());
+            var hash = sha1.ComputeHash(bytes);
+
+            var sb = new StringBuilder(16);
+            for (int i = 0; i < 8; i++)
+            {
+                sb.Append(hash[i].ToString("x2"));
+            }
+            return sb.ToString();
+        }
+    }
+    private void ExecuteMerge(SqlConnection conn)
+    {
+        var sql = @"
+
+-- PAGE
+INSERT INTO TablePageInfo (PageID, IDFBPage, PageLink, PageName)
+SELECT 
+    t.PageID,
+    t.IDFBPage,
+    t.PageLink,
+    t.PageName
+FROM TablePageInfo_Temp t
+LEFT JOIN TablePageInfo p ON p.PageID = t.PageID
+WHERE p.PageID IS NULL;
+
+-- PERSON
+INSERT INTO TablePersonInfo (PersonID, PersonLink, PersonName, PersonNote)
+SELECT 
+    t.PersonID,
+    t.PersonLink,
+    t.PersonName,
+    t.PersonNote
+FROM TablePersonInfo_Temp t
+LEFT JOIN TablePersonInfo p ON p.PersonID = t.PersonID
+WHERE p.PersonID IS NULL;
+
+-- POST
+INSERT INTO TablePostInfo (
+    PostID,
+    PostLink,
+    PostContent,
+    PostTime,
+    RealPostTime,
+    LikeCount,
+    ShareCount,
+    CommentCount,
+    PostAttachment,
+    PostStatus
+)
+SELECT 
+    t.PostID,
+    t.PostLink,
+    t.PostContent,
+    t.PostTime,
+    t.RealPostTime,
+    t.LikeCount,
+    t.ShareCount,
+    t.CommentCount,
+    t.PostAttachment,
+    t.PostStatus
+FROM TablePostInfo_Temp t
+LEFT JOIN TablePostInfo p ON p.PostID = t.PostID
+WHERE p.PostID IS NULL;
+
+-- MAP
+INSERT INTO TablePost (PostID, PageIDCreate, PageIDContainer, PersonIDCreate)
+SELECT 
+    t.PostID,
+    t.PageIDCreate,
+    t.PageIDContainer,
+    t.PersonIDCreate
+FROM TablePost_Temp t
+LEFT JOIN TablePost p ON p.PostID = t.PostID
+WHERE p.PostID IS NULL;
+
+-- SHARE
+INSERT INTO TablePostShare (PostID, PageID, PersonID, TimeShare, RealTimeShare)
+SELECT 
+    t.PostID,
+    t.PageID,
+    t.PersonID,
+    t.TimeShare,
+    t.RealTimeShare
+FROM TablePostShare_Temp t
+LEFT JOIN TablePostShare s
+    ON s.PostID = t.PostID
+    AND ISNULL(s.PageID,'') = ISNULL(t.PageID,'')
+    AND ISNULL(s.PersonID,'') = ISNULL(t.PersonID,'')
+WHERE s.PostID IS NULL;
+
+-- CLEAN
+TRUNCATE TABLE TablePostInfo_Temp;
+TRUNCATE TABLE TablePageInfo_Temp;
+TRUNCATE TABLE TablePersonInfo_Temp;
+TRUNCATE TABLE TablePost_Temp;
+TRUNCATE TABLE TablePostShare_Temp;
+";
+
+        using (var cmd = new SqlCommand(sql, conn))
+        {
+            cmd.ExecuteNonQuery();
+        }
+    }
+    public int InsertPostShareBatchAuto(List<ShareItem> shares)
+    {
+        if (shares == null || shares.Count == 0)
+            return 0;
+
+        int saved = 0;
+
+        using (var conn = new SqlConnection(_connectionString))
+        {
+            conn.Open();
+
+            using (var tran = conn.BeginTransaction())
+            using (var cmd = new SqlCommand())
+            {
+                cmd.Connection = conn;
+                cmd.Transaction = tran;
+
+                try
+                {
+                    cmd.CommandText = @"
+IF NOT EXISTS (
+    SELECT 1 FROM TablePostShare
+    WHERE PostID = @postID
+      AND ISNULL(PageID, '') = ISNULL(@pageID, '')
+      AND ISNULL(PersonID, '') = ISNULL(@personID, '')
+      AND ISNULL(TimeShare, '') = ISNULL(@timeShare, '')
+)
+BEGIN
+    INSERT INTO TablePostShare
+    (
+        PostID,
+        PageID,
+        PersonID,
+        TimeShare,
+        RealTimeShare
+    )
+    VALUES
+    (
+        @postID,
+        @pageID,
+        @personID,
+        @timeShare,
+        @realTimeShare
+    )
+END
+";
+
+                    foreach (var s in shares)
+                    {
+                        if (s == null)
+                            continue;
+
+                        // =========================
+                        // 🔥 MAP FIELD CHUẨN
+                        // =========================
+                        string postID = s.PostID_B;
+
+                        if (string.IsNullOrEmpty(postID) && !string.IsNullOrEmpty(s.PostLinkB))
+                        {
+                            postID = GeneratePostId(s.PostLinkB);
+                        }
+
+                        if (string.IsNullOrEmpty(postID))
+                            continue;
+
+                        DateTime? realTime = s.ShareTimeReal ??
+                                             TimeHelper.ParseFacebookTime(s.ShareTimeRaw);
+
+                        cmd.Parameters.Clear();
+
+                        cmd.Parameters.AddWithValue("@postID", postID);
+                        cmd.Parameters.AddWithValue("@pageID", (object)s.PageID_A ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@personID", (object)s.PersonIDShare ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@timeShare", s.ShareTimeRaw ?? "");
+                        cmd.Parameters.AddWithValue("@realTimeShare", (object)realTime ?? DBNull.Value);
+
+                        cmd.ExecuteNonQuery();
+
+                        saved++;
+                    }
+
+                    tran.Commit();
+                }
+                catch (Exception ex)
+                {
+                    tran.Rollback();
+                    Libary.Instance.LogTech("❌ InsertPostShareBatchAuto ERROR: " + ex.Message);
+                }
+            }
+        }
+
+        return saved;
+    }
     // HÀM LẤY TẤT CẢ POST Ở db
     public DataTable GetAllPostsDB(int? days, int maxCount)
     {
@@ -1435,8 +2015,7 @@ ORDER BY
                 (
                     @days IS NULL
                     OR TRY_CONVERT(datetime, pi.RealPostTime) >= DATEADD(DAY, -@days, GETDATE())
-                )
-        ";
+                )";
                 using (var cmdCount = new SqlCommand(sqlCount, conn))
                 {
                     var pDays = new SqlParameter("@days", SqlDbType.Int);
@@ -1602,7 +2181,7 @@ WHERE PostLink = @link
 
 
                         Attachment = rd["PostAttachment"].ToString(),
-                        PostType = rd["PostStatus"].ToString(),
+                        PostType = rd.GetEnum("PostStatus", PostType.UnknowType),
 
                         PageName = rd["ContainerPageName"].ToString(),
                         PageLink = rd["ContainerPageLink"].ToString(),
@@ -1771,6 +2350,21 @@ WHERE PostLink = @link
         }
     }
 
+    public bool IsPostExist(string postLink)
+    {
+        const string sql = @"
+        SELECT TOP 1 1
+        FROM TablePostInfo
+        WHERE PostLink = @link
+    ";
+
+        object v = ExecuteScalar(sql, new Dictionary<string, object>
+    {
+        { "@link", postLink }
+    });
+
+        return v != null;
+    }
     // ===========================
     // III. PAGE
     // ===========================
@@ -1861,18 +2455,34 @@ WHERE PostLink = @link
             using (var conn = OpenConnection())
             using (var cmd = new SqlCommand(sql, conn))
             {
-                cmd.Parameters.Add("@PageID", SqlDbType.NVarChar, 200).Value = page.PageID;
-                cmd.Parameters.Add("@IDFBPage", SqlDbType.NVarChar, 200).Value = page.IDFBPage ?? "N/A";
-                cmd.Parameters.Add("@PageLink", SqlDbType.NVarChar, -1).Value = page.PageLink;
+                cmd.Parameters.Add("@PageID", SqlDbType.NVarChar, 200)
+                    .Value = (object)page.PageID ?? DBNull.Value;
 
-                cmd.Parameters.Add("@PageName", SqlDbType.NVarChar, 500).Value = page.PageName ?? "N/A";
-                cmd.Parameters.Add("@PageType", SqlDbType.NVarChar, 200).Value = page.PageType ?? "N/A";
-                cmd.Parameters.Add("@PageMembers", SqlDbType.NVarChar, 200).Value = page.PageMembers ?? "N/A";
-                cmd.Parameters.Add("@PageInteraction", SqlDbType.NVarChar, 200).Value = page.PageInteraction ?? "N/A";
-                cmd.Parameters.Add("@PageEvaluation", SqlDbType.NVarChar, 200).Value = page.PageEvaluation ?? "N/A";
-                cmd.Parameters.Add("@PageInfoText", SqlDbType.NVarChar, -1).Value = page.PageInfoText ?? "N/A";
+                cmd.Parameters.Add("@IDFBPage", SqlDbType.NVarChar, 200)
+                    .Value = (object)page.IDFBPage ?? DBNull.Value;
 
-                // ⭐ TimeLastPost – DATETIME2(0)
+                cmd.Parameters.Add("@PageLink", SqlDbType.NVarChar, -1)
+                    .Value = (object)page.PageLink ?? DBNull.Value;
+
+                cmd.Parameters.Add("@PageName", SqlDbType.NVarChar, 500)
+                    .Value = (object)page.PageName ?? DBNull.Value;
+
+                // enum -> string (DB là NVARCHAR)
+                cmd.Parameters.Add("@PageType", SqlDbType.NVarChar, 200)
+                    .Value = page.PageType.ToString();
+
+                cmd.Parameters.Add("@PageMembers", SqlDbType.NVarChar, 200)
+                    .Value = (object)page.PageMembers ?? DBNull.Value;
+
+                cmd.Parameters.Add("@PageInteraction", SqlDbType.NVarChar, 200)
+                    .Value = (object)page.PageInteraction ?? DBNull.Value;
+
+                cmd.Parameters.Add("@PageEvaluation", SqlDbType.NVarChar, 200)
+                    .Value = (object)page.PageEvaluation ?? DBNull.Value;
+
+                cmd.Parameters.Add("@PageInfoText", SqlDbType.NVarChar, -1)
+                    .Value = (object)page.PageInfoText ?? DBNull.Value;
+
                 var pTimeLastPost = new SqlParameter("@TimeLastPost", SqlDbType.DateTime2)
                 {
                     Scale = 0,
@@ -1891,7 +2501,6 @@ WHERE PostLink = @link
             throw;
         }
     }
-
     public DateTime GetPageLastScan(string pageId)
     {
         try
@@ -1919,11 +2528,11 @@ WHERE PostLink = @link
         try
         {
             string sql = @"
-            SELECT PageID, IDFBPage, PageLink, PageName, PageType,
-                   PageMembers, PageInteraction, PageEvaluation,
-                   PageInfoText, PageTimeSave, TimeLastPost, IsScanned
-            FROM TablePageInfo
-            WHERE PageID = @id";
+        SELECT PageID, IDFBPage, PageLink, PageName, PageType,
+               PageMembers, PageInteraction, PageEvaluation,
+               PageInfoText, PageTimeSave, TimeLastPost, IsScanned
+        FROM TablePageInfo
+        WHERE PageID = @id";
 
             using (var conn = SQLDAO.Instance.OpenConnection())
             using (var cmd = new SqlCommand(sql, conn))
@@ -1932,34 +2541,34 @@ WHERE PostLink = @link
 
                 using (var rd = cmd.ExecuteReader())
                 {
-                    if (rd.Read())
+                    if (!rd.Read()) return null;
+
+                    return new PageInfo
                     {
-                        return new PageInfo
-                        {
-                            PageID = rd["PageID"].ToString(),
-                            IDFBPage = rd["IDFBPage"]?.ToString(),
-                            PageLink = rd["PageLink"]?.ToString(),
-                            PageName = rd["PageName"]?.ToString(),
-                            PageType = rd["PageType"]?.ToString(),
-                            PageMembers = rd["PageMembers"]?.ToString(),
-                            PageInteraction = rd["PageInteraction"]?.ToString(),
-                            PageEvaluation = rd["PageEvaluation"]?.ToString(),
-                            PageInfoText = rd["PageInfoText"]?.ToString(),
-                            PageTimeSave = rd["PageTimeSave"]?.ToString(),
-                            TimeLastPost =
-                        rd["TimeLastPost"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rd["TimeLastPost"]),
-                            IsScanned = rd["IsScanned"] != DBNull.Value && Convert.ToBoolean(rd["IsScanned"])
-                        };
-                    }
+                        PageID = rd.GetStringOrNull("PageID"),
+                        IDFBPage = rd.GetStringOrNull("IDFBPage"),
+                        PageLink = rd.GetStringOrNull("PageLink"),
+                        PageName = rd.GetStringOrNull("PageName"),
+                        PageType = rd.GetEnum("PageType", FBType.Unknown),
+                        PageMembers = rd.GetStringOrNull("PageMembers"),
+                        PageInteraction = rd.GetStringOrNull("PageInteraction"),
+                        PageEvaluation = rd.GetStringOrNull("PageEvaluation"),
+                        PageInfoText = rd.GetStringOrNull("PageInfoText"),
+                        PageTimeSave = rd.GetStringOrNull("PageTimeSave"),
+                        TimeLastPost = rd["TimeLastPost"] == DBNull.Value
+                            ? (DateTime?)null
+                            : Convert.ToDateTime(rd["TimeLastPost"]),
+                        IsScanned = rd["IsScanned"] != DBNull.Value
+                            && Convert.ToBoolean(rd["IsScanned"])
+                    };
                 }
             }
         }
         catch (Exception ex)
         {
             Libary.Instance.CreateLog("[GetPageByID SQL] ERROR: " + ex.Message);
+            return null;
         }
-
-        return null;
     }
     private string GetPageIdByPageLink(SqlConnection conn, string pageLink)
     {
@@ -2119,20 +2728,19 @@ WHERE PostLink = @link
     }
     public PageInfo GetPageByIDFB(string idfbPage)
     {
-        if (string.IsNullOrWhiteSpace(idfbPage) || idfbPage == "N/A")
+        if (string.IsNullOrWhiteSpace(idfbPage))
             return null;
 
         const string sql = @"
-    SELECT TOP 1
-        PageID,
-        IDFBPage,
-        PageName,
-        PageLink,
-        PageType
-   
-    FROM TablePageInfo
-    WHERE IDFBPage = @idfb
-    ";
+            SELECT TOP 1
+                PageID,
+                IDFBPage,
+                PageName,
+                PageLink,
+                PageType
+            FROM TablePageInfo
+            WHERE IDFBPage = @idfb
+            ";
 
         using (var conn = OpenConnection())
         using (var cmd = new SqlCommand(sql, conn))
@@ -2146,39 +2754,45 @@ WHERE PostLink = @link
 
                 return new PageInfo
                 {
-                    PageID = rd["PageID"]?.ToString(),
-                    IDFBPage = rd["IDFBPage"]?.ToString(),
-                    PageName = rd["PageName"]?.ToString(),
-                    PageLink = rd["PageLink"]?.ToString(),
-                    PageType = rd["PageType"]?.ToString(),                
+                    PageID = rd.GetStringOrNull("PageID"),
+                    IDFBPage = rd.GetStringOrNull("IDFBPage"),
+                    PageName = rd.GetStringOrNull("PageName"),
+                    PageLink = rd.GetStringOrNull("PageLink"),
+                    PageType = rd.GetEnum("PageType", FBType.Unknown)
                 };
             }
         }
     }
 
     //==============hàm dưới phục vụ in ra page (trang)
-    public DataTable GetPageNotePage(int pageIndex,int pageSize, out int totalRows)
+    public DataTable GetPageNotePaging(int pageIndex, int pageSize, out int totalRows)
     {
-        using (var conn = OpenConnection())
+        using (var conn = SQLDAO.Instance.OpenConnection())
         {
-            totalRows = (int)new SqlCommand(
-                "SELECT COUNT(*) FROM TablePageNote", conn
-            ).ExecuteScalar();
+            // 1️⃣ total
+            using (var cmdCount = new SqlCommand(
+                "SELECT COUNT(*) FROM TablePageNote", conn))
+            {
+                totalRows = (int)cmdCount.ExecuteScalar();
+            }
 
+            // 2️⃣ data (chỉ lấy cần thiết)
             string sql = @"
-            SELECT *
+            SELECT PageID, TimeSave
             FROM TablePageNote
             ORDER BY TimeSave DESC
             OFFSET (@PageIndex - 1) * @PageSize ROWS
             FETCH NEXT @PageSize ROWS ONLY";
 
-            var cmd = new SqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@PageIndex", pageIndex);
-            cmd.Parameters.AddWithValue("@PageSize", pageSize);
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@PageIndex", pageIndex);
+                cmd.Parameters.AddWithValue("@PageSize", pageSize);
 
-            var dt = new DataTable();
-            new SqlDataAdapter(cmd).Fill(dt);
-            return dt;
+                var dt = new DataTable();
+                new SqlDataAdapter(cmd).Fill(dt);
+                return dt;
+            }
         }
     }
     public DataTable GetPageInfoPage(int pageIndex, int pageSize, out int totalRows)
@@ -2208,6 +2822,42 @@ WHERE PostLink = @link
                 var da = new SqlDataAdapter(cmd);
                 var dt = new DataTable();
                 da.Fill(dt);
+                return dt;
+            }
+        }
+    }
+    public DataTable GetPageInfoPage_ByType(int pageIndex, int pageSize, bool isScan, out int totalRows)
+    {
+        using (var conn = SQLDAO.Instance.OpenConnection())
+        {
+            // ✔️ điều kiện lọc
+            string where = isScan
+                ? "IsScanned = 1"
+                : "ISNULL(IsScanned, 0) = 0";
+
+            // 1️⃣ Tổng số dòng
+            using (var cmdCount = new SqlCommand(
+                $"SELECT COUNT(*) FROM TablePageInfo WHERE {where}", conn))
+            {
+                totalRows = (int)cmdCount.ExecuteScalar();
+            }
+
+            // 2️⃣ Data
+            string sql = $@"
+        SELECT *
+        FROM TablePageInfo
+        WHERE {where}
+        ORDER BY PageTimeSave DESC
+        OFFSET (@PageIndex - 1) * @PageSize ROWS
+        FETCH NEXT @PageSize ROWS ONLY";
+
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@PageIndex", pageIndex);
+                cmd.Parameters.AddWithValue("@PageSize", pageSize);
+
+                var dt = new DataTable();
+                new SqlDataAdapter(cmd).Fill(dt);
                 return dt;
             }
         }
@@ -2242,6 +2892,167 @@ WHERE PostLink = @link
             }
         }
     }
+    public DataTable GetPageMonitorPaging(int pageIndex, int pageSize, out int totalRows)
+    {
+        using (var conn = SQLDAO.Instance.OpenConnection())
+        {
+            // total
+            using (var cmdCount = new SqlCommand(
+                "SELECT COUNT(*) FROM TablePageMonitor", conn))
+            {
+                totalRows = (int)cmdCount.ExecuteScalar();
+            }
+
+            // data (chỉ lấy cần thiết)
+            string sql = @"
+            SELECT 
+                PageID,
+                IsAuto,
+                Status,
+                FirstScanTime,
+                LastScanTime,
+                TotalPostsScanned,
+                TimeSave
+            FROM TablePageMonitor
+            ORDER BY ISNULL(LastScanTime, TimeSave) DESC
+            OFFSET (@PageIndex - 1) * @PageSize ROWS
+            FETCH NEXT @PageSize ROWS ONLY";
+
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@PageIndex", pageIndex);
+                cmd.Parameters.AddWithValue("@PageSize", pageSize);
+
+                var dt = new DataTable();
+                new SqlDataAdapter(cmd).Fill(dt);
+                return dt;
+            }
+        }
+    }
+    //--phân trang cho post lấy theo page
+    public List<PostPage> GetPostsByPagePaging(
+    string pageId,
+    int pageIndex,
+    int pageSize,
+    out int totalRows)
+    {
+        var list = new List<PostPage>();
+
+        using (var conn = OpenConnection())
+        {
+            // 🔹 1. COUNT
+            using (var cmdCount = new SqlCommand(@"
+            SELECT COUNT(*)
+            FROM TablePost
+            WHERE PageIDContainer = @PageID", conn))
+            {
+                cmdCount.Parameters.AddWithValue("@PageID", pageId);
+                totalRows = (int)cmdCount.ExecuteScalar();
+            }
+
+            // 🔹 2. DATA
+            string sql = @"
+                    SELECT 
+                p.PostID,
+
+                -- 🔹 mapping
+                p.PageIDCreate,
+                p.PageIDContainer,
+                p.PersonIDCreate,
+
+                -- 🔹 post info
+                pi.PostLink,
+                pi.PostContent,
+                pi.PostTime,
+                pi.RealPostTime,
+                pi.LikeCount,
+                pi.ShareCount,
+                pi.CommentCount,
+                pi.PostAttachment,
+
+                -- 🔹 page create
+                pc.PageName AS PageCreateName,
+                pc.PageLink AS PageCreateLink,
+                pc.PageType AS PageCreateType,
+
+                -- 🔹 page container
+                pg.PageName AS PageContainerName,
+                pg.PageLink AS PageContainerLink,
+                pg.PageType AS PageContainerType,
+
+                -- 🔹 person
+                pe.PersonName,
+                pe.PersonLink,
+                pe.PersonNote
+
+            FROM TablePost p
+
+            LEFT JOIN TablePostInfo pi ON p.PostID = pi.PostID
+
+            LEFT JOIN TablePageInfo pc ON p.PageIDCreate = pc.PageID
+            LEFT JOIN TablePageInfo pg ON p.PageIDContainer = pg.PageID
+            LEFT JOIN TablePersonInfo pe ON p.PersonIDCreate = pe.PersonID
+
+            WHERE p.PageIDContainer = @PageID   -- 🔥 QUAN TRỌNG
+
+            ORDER BY 
+                CASE WHEN pi.RealPostTime IS NULL THEN 1 ELSE 0 END,
+                pi.RealPostTime DESC
+
+            OFFSET (@PageIndex - 1) * @PageSize ROWS
+            FETCH NEXT @PageSize ROWS ONLY";
+
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@PageID", pageId);
+                cmd.Parameters.AddWithValue("@PageIndex", pageIndex);
+                cmd.Parameters.AddWithValue("@PageSize", pageSize);
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var p = new PostPage
+                        {
+                            PostID = reader.GetStringOrNull("PostID"),
+
+                            // ===== POST =====
+                            PostLink = reader.GetStringOrNull("PostLink"),
+                            Content = reader.GetStringOrNull("PostContent"),
+                            PostTime = reader.GetStringOrNull("PostTime"),
+
+                            RealPostTime = reader["RealPostTime"] == DBNull.Value? (DateTime?)null: Convert.ToDateTime(reader["RealPostTime"]),
+
+                            LikeCount = reader["LikeCount"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["LikeCount"]),
+                            ShareCount = reader["ShareCount"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["ShareCount"]),
+                            CommentCount = reader["CommentCount"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["CommentCount"]),
+
+                            Attachment = reader.GetStringOrNull("PostAttachment"),
+
+                            // ===== POSTER =====
+                            PosterName = reader.GetStringOrNull("PersonName"),
+                            PosterLink = reader.GetStringOrNull("PersonLink"),
+                            PosterNote = reader.GetEnum("PersonNote", FBType.Unknown),
+
+                            // ===== PAGE =====
+                            PageID = reader.GetStringOrNull("PageIDContainer"),
+                            PageName = reader.GetStringOrNull("PageContainerName"),
+                            PageLink = reader.GetStringOrNull("PageContainerLink"),
+
+                            ContainerIdFB = reader.GetStringOrNull("PageIDContainer"),
+                            ContainerType = reader.GetEnum("PageContainerType", FBType.Unknown)
+                        };
+
+                        list.Add(p);
+                    }
+                }
+            }
+        }
+
+        return list;
+    }
+   
+    // hết phân trang
     public bool CheckPageExistsByLink(string pageLink)
     {
         try
@@ -2698,6 +3509,37 @@ WHERE PostLink = @link
 
         return dt;
     }
+    public List<PageMonitorViewModel> GetPageMonitorVM()
+    {
+        string sql = @"
+    SELECT 
+        m.PageID, 
+        p.PageName, 
+        p.TimeLastPost,   -- 🔥 QUAN TRỌNG
+        m.Status, 
+        m.LastScanTime
+    FROM TablePageMonitor m
+    LEFT JOIN TablePageInfo p ON m.PageID = p.PageID
+    ORDER BY m.TimeSave DESC
+    ";
+
+        return QueryList(sql, rd =>
+        {
+            return new PageMonitorViewModel
+            {
+                PageID = rd["PageID"]?.ToString(),
+                PageName = rd["PageName"]?.ToString(),
+                Status = rd["Status"]?.ToString(),
+                PostScan = 0,
+                LastScanTime = rd["LastScanTime"] as DateTime?,
+
+                // 🔥 FIX CHÍNH
+                TimeLastPost = rd["TimeLastPost"] == DBNull.Value
+                    ? (DateTime?)null
+                    : Convert.ToDateTime(rd["TimeLastPost"])
+            };
+        });
+    }
     public HashSet<string> GetAllPageInMonitor()
     {
         var set = new HashSet<string>();
@@ -2917,13 +3759,13 @@ WHERE PostLink = @link
                 {
                     list.Add(new PersonInfo
                     {
-                        PersonID = rd["PersonID"]?.ToString() ?? "N/A",
-                        IDFBPerson = rd["IDFBPerson"]?.ToString() ?? "N/A",
-                        PersonLink = rd["PersonLink"]?.ToString() ?? "N/A",
-                        PersonName = rd["PersonName"]?.ToString() ?? "N/A",
-                        PersonInfoText = rd["PersonInfo"]?.ToString() ?? "N/A",
-                        PersonNote = rd["PersonNote"]?.ToString() ?? "N/A",
-                        PersonTimeSave = rd["PersonTimeSave"]?.ToString() ?? "N/A"
+                        PersonID = rd.GetStringOrNull("PersonID"),
+                        IDFBPerson = rd.GetStringOrNull("IDFBPerson"),
+                        PersonLink = rd.GetStringOrNull("PersonLink"),
+                        PersonName = rd.GetStringOrNull("PersonName"),
+                        PersonInfoText = rd.GetStringOrNull("PersonInfo"),
+                        PersonNote = rd.GetEnum("PersonNote", FBType.Unknown),
+                        PersonTimeSave = rd.GetStringOrNull("PersonTimeSave")
                     });
                 }
             }
@@ -3127,7 +3969,78 @@ WHERE PostLink = @link
             idfb
         );
     }
+    public PersonInfo GetPersonByID(string personId)
+    {
+        if (string.IsNullOrWhiteSpace(personId) || personId == "N/A")
+            return null;
 
+        const string sql = @"
+        SELECT TOP 1
+            PersonID,
+            PersonLink,
+            PersonName,
+            PersonNote
+        FROM TablePersonInfo
+        WHERE PersonID = @id
+    ";
+
+        using (var conn = OpenConnection())
+        using (var cmd = new SqlCommand(sql, conn))
+        {
+            cmd.Parameters.Add("@id", SqlDbType.NVarChar, 200).Value = personId;
+
+            using (var rd = cmd.ExecuteReader())
+            {
+                if (!rd.Read())
+                    return null;
+
+                return new PersonInfo
+                {
+                    PersonID = rd.GetStringOrNull("PersonID"),
+                    PersonLink = rd.GetStringOrNull("PersonLink"),
+                    PersonName = rd.GetStringOrNull("PersonName"),
+                    PersonNote = rd.GetEnum("PersonNote", FBType.Unknown)
+                };
+            }
+        }
+    }
+    public PersonInfo GetPersonByLink(string link)
+    {
+        if (string.IsNullOrWhiteSpace(link))
+            return null;
+
+        var normalizedLink = UrlHelper.NormalizeFacebookUrl(link);
+
+        const string sql = @"
+        SELECT TOP 1
+            PersonID,
+            PersonLink,
+            PersonName,
+            PersonNote
+        FROM TablePersonInfo
+        WHERE PersonLink = @link
+    ";
+
+        using (var conn = OpenConnection())
+        using (var cmd = new SqlCommand(sql, conn))
+        {
+            cmd.Parameters.Add("@link", SqlDbType.NVarChar).Value = normalizedLink;
+
+            using (var rd = cmd.ExecuteReader())
+            {
+                if (!rd.Read())
+                    return null;
+
+                return new PersonInfo
+                {
+                    PersonID = rd.GetStringOrNull("PersonID"),
+                    PersonLink = rd.GetStringOrNull("PersonLink"),
+                    PersonName = rd.GetStringOrNull("PersonName"),
+                    PersonNote = rd.GetEnum("PersonNote", FBType.Unknown)
+                };
+            }
+        }
+    }
     //Table SHARE
     public void InsertPostShares(IEnumerable<ShareItem> shares)
     {
@@ -3460,57 +4373,69 @@ WHERE PostLink = @link
 
         return newId?.ToString();
     }
-    public void InsertTablePostShare(string postID, string pageID,string personID, string timeShare, DateTime? realTimeShare)
+    public void InsertTablePostShare(string postID, string pageID, string personID, string timeShare, DateTime? realTimeShare)
     {
         const string sql = @"
-    IF NOT EXISTS (
-        SELECT 1 FROM TablePostShare
-        WHERE PostID = @postID
-          AND ISNULL(PageID, '') = ISNULL(@pageID, '')
-          AND ISNULL(PersonID, '') = ISNULL(@personID, '')
-          AND ISNULL(TimeShare, '') = ISNULL(@timeShare, '')
+IF NOT EXISTS (
+    SELECT 1 FROM TablePostShare
+    WHERE PostID = @postID
+      AND (PageID = @pageID OR (PageID IS NULL AND @pageID IS NULL))
+      AND (PersonID = @personID OR (PersonID IS NULL AND @personID IS NULL))
+      AND (TimeShare = @timeShare OR (TimeShare IS NULL AND @timeShare IS NULL))
+)
+BEGIN
+    INSERT INTO TablePostShare
+    (
+        PostID,
+        PageID,
+        PersonID,
+        TimeShare,
+        RealTimeShare
     )
-    BEGIN
-        INSERT INTO TablePostShare
-        (
-            PostID,
-            PageID,
-            PersonID,
-            TimeShare,
-            RealTimeShare
-        )
-        VALUES
-        (
-            @postID,
-            @pageID,
-            @personID,
-            @timeShare,
-            @realTimeShare
-        );
-    END;
-    ";
+    VALUES
+    (
+        @postID,
+        @pageID,
+        @personID,
+        @timeShare,
+        @realTimeShare
+    );
+END;
+";
 
         ExecuteNonQuery(sql, new Dictionary<string, object>
         {
             ["@postID"] = postID,
             ["@pageID"] = (object)pageID ?? DBNull.Value,
             ["@personID"] = (object)personID ?? DBNull.Value,
-            ["@timeShare"] = timeShare ?? "",
+            ["@timeShare"] = (object)timeShare ?? DBNull.Value, // 🔥 FIX
             ["@realTimeShare"] = (object)realTimeShare ?? DBNull.Value
         });
     }
-    public  string GetPostStatusUI(string postType)
+    public string GetPostStatusUI(PostType postType)
     {
-        if (string.IsNullOrEmpty(postType))
-            return "Tự đăng";
+        switch (postType)
+        {
+            case PostType.Share_WithContent:
+            case PostType.Share_NoContent:
+                return "Bài share";
 
-        if (postType.StartsWith("Share", StringComparison.OrdinalIgnoreCase))
-            return "Bài share";
+            case PostType.Page_Normal:
+            case PostType.Page_Photo_Cap:
+            case PostType.Page_Photo_NoCap:
+            case PostType.Page_Video_Cap:
+            case PostType.Page_Video_Nocap:
+            case PostType.page_Real_Cap:
+            case PostType.Page_Reel_NoCap:
+            case PostType.Page_BackGround:
+            case PostType.Page_LinkWeb:
+            case PostType.Page_NoConent:
+                return "Bài gốc";
 
-        if (postType.StartsWith("Page", StringComparison.OrdinalIgnoreCase))
-            return "Bài gốc";
-
-        return "Tự đăng";
+            case PostType.Page_Unknow:
+            default:
+                return "Tự đăng";
+        }
     }
     //SQL Keyword
     public List<KeywordDTO> GetAllKeyword()
@@ -4094,7 +5019,6 @@ WHERE PostLink = @link
             ["@tid"] = topicId
         });
     }
-
     //Negative
     public bool NegativeKeywordScoreExists(int keywordId)
     {
@@ -4272,7 +5196,6 @@ WHERE PostLink = @link
         { "@note", (object)note ?? DBNull.Value }
     });
     }
-
     public void DeleteAttentionKeywordScore(int keywordId)
     {
         ExecuteNonQuery(@"
@@ -4498,5 +5421,55 @@ WHERE PostLink = @link
         WHERE Id = 1
     ");
     }
-    
+    ///======các hàm tăng tốc độ query
+    ///
+    public Dictionary<string, (int TotalPost, DateTime? LastPostTime)> GetPostStatsBatch(List<string> pageIds)
+    {
+        var result = new Dictionary<string, (int, DateTime?)>();
+
+        if (pageIds == null || pageIds.Count == 0)
+            return result;
+
+        using (var conn = OpenConnection())
+        {
+            // Tạo parameter an toàn
+            var parameters = pageIds
+                .Select((id, i) => new SqlParameter($"@id{i}", id))
+                .ToList();
+
+            string inClause = string.Join(",", parameters.Select(p => p.ParameterName));
+
+            string sql = $@"
+        SELECT 
+            p.PageIDContainer AS PageID,
+            COUNT(*) AS TotalPost,
+            MAX(pi.RealPostTime) AS LastPostTime
+        FROM TablePost p
+        LEFT JOIN TablePostInfo pi ON p.PostID = pi.PostID
+        WHERE p.PageIDContainer IN ({inClause})
+        GROUP BY p.PageIDContainer";
+
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddRange(parameters.ToArray());
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string pageId = reader["PageID"].ToString();
+                        int total = Convert.ToInt32(reader["TotalPost"]);
+
+                        DateTime? last = reader["LastPostTime"] == DBNull.Value
+                            ? (DateTime?)null
+                            : Convert.ToDateTime(reader["LastPostTime"]);
+
+                        result[pageId] = (total, last);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
 }

@@ -29,6 +29,7 @@ using System.Security.Policy;
 using DevExpress.Utils.About;
 using CrawlFB_PW._1._0.DAO.Page;
 using DevExpress.DocumentView;
+using CrawlFB_PW._1._0.Helper.Mapper;
 namespace CrawlFB_PW._1._0.Page
 {
     public partial class FUpdatePostPage : Form
@@ -211,6 +212,7 @@ namespace CrawlFB_PW._1._0.Page
             gv.BeginUpdate();
             try
             {
+                gv.OptionsBehavior.Editable = true;
                 UIGridHelper.EnableRowIndicatorSTT(gv);
                 UIGridHelper.ApplyVietnameseCaption(gv);
 
@@ -379,39 +381,16 @@ namespace CrawlFB_PW._1._0.Page
                             Libary.Instance.SetProfileContext(profile.IDAdbrowser, profile.ProfileName);                           
                             var result = await UpdatePostPageDAO.Instance.UpdatePostPageAsync(crawlPage, page.PageLink, pageId, page.IDFBPage, page.PageName, page.TimeLastPost);
                             var posts = result.Posts;
-                            var shares = result.Shares;                         
-                            var postVMs = posts.Select(p => new PostInfoViewModel
+                            var shares = result.Shares;
+                            var postVMs = posts.Select(p =>
                             {
-                                PostID = p.PostID,
-                                PostLink = p.PostLink,
-                                Content = p.Content,
+                                var vm = p.ToViewModel();   // 🔥 dùng mapper chung
 
-                                PosterName = p.PosterName,
-                                PosterLink = p.PosterLink,
-                                PosterNote = p.PosterNote,
-                                PosterIdFB = p.PosterIdFB,
-                                PageName = p.PageName,
-                                PageLink = p.PageLink,
-                                ContainerIdFB = p.ContainerIdFB,
-                                Like = p.LikeCount ?? 0,
-                                Comment = p.CommentCount ?? 0,
-                                Share = p.ShareCount ?? 0,
-                                PostType = ProcessingHelper.MapPostType(p.PostType),
-                                
-                                Attachment = p.Attachment,
-                                AttachmentView = AttachmentHelper.GetAttachmentForView(p.Attachment),
+                                vm.Status = UIStatus.Done;
+                                vm.ParentPage = page;
 
-                                // 🔥 FLAG DÙNG CHO ICON
-                                HasReel = p.PostType.Contains("Reel"),
-                                HasVideo = p.PostType.Contains("Video"),
-                                HasPhoto = p.PostType.Contains("Photo"),
-
-                                PostTimeRaw = p.PostTime,
-                                RealPostTime = p.RealPostTime,
-                                Status = UIStatus.Done,     // hoặc Pending
-                                ParentPage = page           // ⭐ BÂY GIỜ GÁN ĐƯỢC
+                                return vm;
                             }).ToList();
-
                             Libary.Instance.LogForm(module, "Chạy " + page.PageLink + " được tổng: " + posts.Count() + " bài viết");
                             foreach ( var post in posts )
                             {
@@ -582,7 +561,7 @@ namespace CrawlFB_PW._1._0.Page
             sb.AppendLine($"Poster: {post.PosterName}");
             sb.AppendLine($"PosterLink: {post.PosterLink ?? "N/A"}");
             sb.AppendLine($"PosterIdFB: {post.PosterIdFB ?? "N/A"}");
-            sb.AppendLine($"PosterNote: {post.PosterNote ?? "N/A"}");
+            sb.AppendLine($"PosterNote: {post.PosterNote}");
 
             sb.AppendLine($"Link: {post.PostLink}");
             sb.AppendLine($"Time: {post.PostTime}");

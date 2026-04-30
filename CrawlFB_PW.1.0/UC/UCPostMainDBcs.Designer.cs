@@ -33,6 +33,8 @@
             this.barManager1 = new DevExpress.XtraBars.BarManager(this.components);
             this.bar1 = new DevExpress.XtraBars.Bar();
             this.bar2 = new DevExpress.XtraBars.Bar();
+            this.barSubItem1 = new DevExpress.XtraBars.BarSubItem();
+            this.btn_ExportAll = new DevExpress.XtraBars.BarButtonItem();
             this.bar3 = new DevExpress.XtraBars.Bar();
             this.barDockControlTop = new DevExpress.XtraBars.BarDockControl();
             this.barDockControlBottom = new DevExpress.XtraBars.BarDockControl();
@@ -40,8 +42,8 @@
             this.barDockControlRight = new DevExpress.XtraBars.BarDockControl();
             this.gridControl1 = new DevExpress.XtraGrid.GridControl();
             this.gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.barSubItem1 = new DevExpress.XtraBars.BarSubItem();
-            this.btn_ExportAll = new DevExpress.XtraBars.BarButtonItem();
+            this.barSubItem2 = new DevExpress.XtraBars.BarSubItem();
+            this.btn_DeletePost = new DevExpress.XtraBars.BarButtonItem();
             ((System.ComponentModel.ISupportInitialize)(this.barManager1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridView1)).BeginInit();
@@ -60,9 +62,11 @@
             this.barManager1.Form = this;
             this.barManager1.Items.AddRange(new DevExpress.XtraBars.BarItem[] {
             this.barSubItem1,
-            this.btn_ExportAll});
+            this.btn_ExportAll,
+            this.barSubItem2,
+            this.btn_DeletePost});
             this.barManager1.MainMenu = this.bar2;
-            this.barManager1.MaxItemId = 2;
+            this.barManager1.MaxItemId = 5;
             this.barManager1.StatusBar = this.bar3;
             // 
             // bar1
@@ -80,10 +84,28 @@
             this.bar2.DockRow = 0;
             this.bar2.DockStyle = DevExpress.XtraBars.BarDockStyle.Top;
             this.bar2.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
-            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.barSubItem1, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph)});
+            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.barSubItem1, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
+            new DevExpress.XtraBars.LinkPersistInfo(this.barSubItem2)});
             this.bar2.OptionsBar.MultiLine = true;
             this.bar2.OptionsBar.UseWholeRow = true;
             this.bar2.Text = "Main menu";
+            // 
+            // barSubItem1
+            // 
+            this.barSubItem1.Caption = "Export";
+            this.barSubItem1.Id = 0;
+            this.barSubItem1.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("barSubItem1.ImageOptions.Image")));
+            this.barSubItem1.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("barSubItem1.ImageOptions.LargeImage")));
+            this.barSubItem1.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_ExportAll)});
+            this.barSubItem1.Name = "barSubItem1";
+            // 
+            // btn_ExportAll
+            // 
+            this.btn_ExportAll.Caption = "Xuất toàn bộ";
+            this.btn_ExportAll.Id = 1;
+            this.btn_ExportAll.Name = "btn_ExportAll";
+            this.btn_ExportAll.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_ExportAll_ItemClick);
             // 
             // bar3
             // 
@@ -147,22 +169,20 @@
             this.gridView1.Name = "gridView1";
             this.gridView1.OptionsView.ShowGroupPanel = false;
             // 
-            // barSubItem1
+            // barSubItem2
             // 
-            this.barSubItem1.Caption = "Export";
-            this.barSubItem1.Id = 0;
-            this.barSubItem1.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("barSubItem1.ImageOptions.Image")));
-            this.barSubItem1.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("barSubItem1.ImageOptions.LargeImage")));
-            this.barSubItem1.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
-            new DevExpress.XtraBars.LinkPersistInfo(this.btn_ExportAll)});
-            this.barSubItem1.Name = "barSubItem1";
+            this.barSubItem2.Caption = "Thao tác";
+            this.barSubItem2.Id = 3;
+            this.barSubItem2.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_DeletePost)});
+            this.barSubItem2.Name = "barSubItem2";
             // 
-            // btn_ExportAll
+            // btn_DeletePost
             // 
-            this.btn_ExportAll.Caption = "Xuất toàn bộ";
-            this.btn_ExportAll.Id = 1;
-            this.btn_ExportAll.Name = "btn_ExportAll";
-            this.btn_ExportAll.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_ExportAll_ItemClick);
+            this.btn_DeletePost.Caption = "Xóa bài viết";
+            this.btn_DeletePost.Id = 4;
+            this.btn_DeletePost.Name = "btn_DeletePost";
+            this.btn_DeletePost.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_DeletePost_ItemClick);
             // 
             // UCPostMainDBcs
             // 
@@ -197,5 +217,7 @@
         private DevExpress.XtraGrid.Views.Grid.GridView gridView1;
         private DevExpress.XtraBars.BarSubItem barSubItem1;
         private DevExpress.XtraBars.BarButtonItem btn_ExportAll;
+        private DevExpress.XtraBars.BarSubItem barSubItem2;
+        private DevExpress.XtraBars.BarButtonItem btn_DeletePost;
     }
 }

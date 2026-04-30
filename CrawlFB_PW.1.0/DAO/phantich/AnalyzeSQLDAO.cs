@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Data;
 using CrawlFB_PW._1._0.ViewModels;
 using CrawlFB_PW._1._0.DTO;
+using CrawlFB_PW._1._0.Helper.Data;
+using CrawlFB_PW._1._0.Enums;
 namespace CrawlFB_PW._1._0.DAO.phantich
 {
     public class AnalyzeSQLDAO
@@ -358,7 +360,7 @@ namespace CrawlFB_PW._1._0.DAO.phantich
                 ShareCount = row["ShareCount"] as int?,
                 CommentCount = row["CommentCount"] as int?,
                 Attachment = row["PostAttachment"]?.ToString(),
-                PostType = row["PostStatus"]?.ToString()
+                PostType = row.GetEnum("PostStatus", PostType.UnknowType)
             };
         }
     }

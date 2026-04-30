@@ -76,9 +76,9 @@ namespace CrawlFB_PW._1._0.DAO
         }
         public async Task<PostResult> GetPostPerson(IPage page,IElementHandle postNode, string personUrl,string personName)
         {
-            string PostTime = "N/A", PostLink = "N/A", OriginalPostTime = "N/A", OriginalPostLink = "N/A", PostStatus = "N/A";
-            string OriginalPosterLink = "N/A", OriginalPosterName = "N/A", OriginalPosterNote = "N/A";
-             string Content = "N/A", OriginalContent = "N/A", OriginalPostStatus = "N/A"; int? LikeCount = null, ShareCount = null, CommentCount = null;
+            string PostTime = "N/A", PostLink = "N/A", OriginalPostTime = "N/A", OriginalPostLink = "N/A"; PostType PostStatus = PostType.UnknowType; ;
+            string OriginalPosterLink = "N/A", OriginalPosterName = "N/A";FBType OriginalPosterNote = FBType.Unknown;
+            string Content = "N/A", OriginalContent = "N/A"; PostType OriginalPostStatus = PostType.UnknowType; int? LikeCount = null, ShareCount = null, CommentCount = null;
             int? OriginalLikeCount = null, OriginalShareCount = null, OriginalCommentCount = null;
             DateTime? RealPostTime = null;
             DateTime? RealOriginalPostTime = null;
@@ -156,19 +156,19 @@ namespace CrawlFB_PW._1._0.DAO
                             {
                                 noidung = content2;
                                 noidunggoc = content5;
-                                PostStatus = "Đủ nội dung";
+                                PostStatus = PostType.Page_Normal;
                                 Libary.Instance.LogTech("🟩 Lấy content share + content gốc");
                             }
                             else if (!hasContent2 && !hasContent5 && hasContent4)
                             {
                                 noidunggoc = content4;
-                                PostStatus = "có nội dung share";
+                                PostStatus = PostType.Share_WithContent;
                                 Libary.Instance.LogTech("🟨 Lấy content gốc từ container 4");
                             }
                             else if (hasContent2)
                             {
                                 noidung = content2;
-                                PostStatus = "không kèm nội dung";
+                                PostStatus = PostType.Page_NoConent;
                                 Libary.Instance.LogTech("🟦 Chỉ có content share");
                             }
                             else
@@ -220,7 +220,7 @@ namespace CrawlFB_PW._1._0.DAO
                         OriginalLikeCount = postB.LikeCount;
                         OriginalCommentCount = postB.CommentCount;
                         OriginalShareCount = postB.ShareCount;
-                        OriginalPostStatus = "Bài gốc";
+                        
                         Libary.Instance.LogTech($"{Libary.IconOK}🟨 Share normal OK");
                     }
                 else
@@ -239,11 +239,11 @@ namespace CrawlFB_PW._1._0.DAO
                         Libary.Instance.LogTech($"Link sau xử lý: {PostLink}");
                         Libary.Instance.LogTech($"time sau xử lý: {TimeHelper.ParseFacebookTime(PostTime)}");
                         if (!hasReel || (hasReel && PostLink == reelLink))// time = 1 k phải reel
-                        {                                                    
+                        {
                             // LẤY NỘI DUNG
                             if (postInfor.Count == 3 || postInfor.Count == 2)
                             {
-                                
+
                                 if (postInfor.Count == 3)
                                 {
                                     Libary.Instance.LogTech("Vào Postinfor3", AppConfig.ENABLE_TECH_LOG);
@@ -255,7 +255,7 @@ namespace CrawlFB_PW._1._0.DAO
                                     {
                                         Content = ContentNomal;
                                         Libary.Instance.LogTech($"{Libary.IconOK} lấy bằng content Nomal", AppConfig.ENABLE_TECH_LOG);
-                                        PostStatus = "bài đăng bình thường";
+                                        PostStatus = PostType.Page_Normal;
                                     }
                                     else
                                     {
@@ -265,11 +265,11 @@ namespace CrawlFB_PW._1._0.DAO
                                         {
                                             Content = ContentBackGround;
                                             Libary.Instance.LogTech($"{Libary.IconOK} lấy bằng content BackGround", AppConfig.ENABLE_TECH_LOG);
-                                            PostStatus = "bài đăng kèm ảnh/video";
+                                            PostStatus = PostType.Page_Photo_Cap;
                                         }
                                         else
                                         {
-                                            PostStatus = "bài đăng không có nội dung";
+                                            PostStatus = PostType.Page_NoConent;
                                         }
                                     }
                                     if (!string.IsNullOrWhiteSpace(Content) && Content != "N/A")
@@ -295,20 +295,20 @@ namespace CrawlFB_PW._1._0.DAO
                                     Content = await PageDAO.Instance.BackgroundTextAllAsync(page, postNode);
                                     if (!string.IsNullOrWhiteSpace(Content) && Content != "N/A")
                                     {
-                                        PostStatus = "bài đăng nền màu/ảnh";
+                                        PostStatus = PostType.Page_BackGround;
                                         Libary.Instance.LogTech("chốt kiểu bài viết: " + PostStatus);
                                         Libary.Instance.LogTech($"{Libary.IconOK} Lấy bài viết thành công background, số ký tự: " + Content.Length);
                                     }
                                     else
                                     {
-                                        PostStatus = "không lấy được nội dung";
+                                        PostStatus = PostType.Page_BackGround_Nocap;
                                         Libary.Instance.LogTech($"{Libary.IconFail} Lỗi không lấy được nội dung bài viết background");
                                     }
                                 }
                             }
                             else if (postInfor.Count == 4)
                             {
-                                Libary.Instance.LogTech("Vào Postinfor 4", AppConfig.ENABLE_TECH_LOG);                        
+                                Libary.Instance.LogTech("Vào Postinfor 4", AppConfig.ENABLE_TECH_LOG);
                                 var contentContainer = PageDAO.Instance.GetSafe(postInfor, 2);
                                 Libary.Instance.LogTech("   🔹 Đang lấy nội dung...", AppConfig.ENABLE_TECH_LOG);
                                 Content = await PageDAO.Instance.GetContentTextAsync(page, contentContainer);
@@ -319,7 +319,7 @@ namespace CrawlFB_PW._1._0.DAO
                                     if (!string.IsNullOrWhiteSpace(Content))
                                     {
                                         Libary.Instance.LogTech($"{Libary.IconOK} Lấy bài viết thành công background, số ký tự: " + Content.Length);
-                                        PostStatus = "bài đăng kèm ảnh/video";
+                                        PostStatus = PostType.Page_Photo_Cap;
                                         Libary.Instance.LogTech(
                                                "preview: " +
                                                (Content.Length > 200
@@ -331,13 +331,14 @@ namespace CrawlFB_PW._1._0.DAO
                                     else
                                     {
                                         Libary.Instance.LogTech($"{Libary.IconFail} Background k thấy nội dung");
-                                        PostStatus = "bài đăng không có nội dung";
+                                        PostStatus = PostType.Page_NoConent;
                                     }
                                 }
+                            
                                 else
                                 {
                                     Libary.Instance.LogTech($"{Libary.IconFail} Bài viết gắn link ngoài k có content");
-                                    PostStatus = "bài đăng dẫn link ngoài";
+                                    PostStatus = PostType.Page_LinkWeb;
                                 }
                                 Libary.Instance.LogTech("chốt kiểu bài viết: " + PostStatus);
                             }
@@ -360,7 +361,7 @@ namespace CrawlFB_PW._1._0.DAO
                                 {
                                     Content = ContentNomal;
                                     Libary.Instance.LogTech($"{Libary.IconOK} lấy bằng content Nomal", AppConfig.ENABLE_TECH_LOG);
-                                    PostStatus = "bài đăng bình thường";
+                                    PostStatus = PostType.Page_Normal;
                                 }
                                 else
                                 {
@@ -425,7 +426,7 @@ namespace CrawlFB_PW._1._0.DAO
                                     OriginalLikeCount = reelPost.LikeCount;
                                     OriginalCommentCount = reelPost.CommentCount;
                                     OriginalShareCount = reelPost.ShareCount;
-                                    OriginalPostStatus = "Bài gốc";
+                                    OriginalPostStatus = PostType.page_Real_Cap;
                                     OriginalPosterNote = reelPost.PosterNote;
                             
                                     Libary.Instance.LogTech($"{Libary.IconOK}🟨 Share Reel OK");
@@ -456,14 +457,14 @@ namespace CrawlFB_PW._1._0.DAO
                         PostLink = ProcessingHelper.ShortenFacebookPostLink(PostLink),
                         PostTime = PostTime,
                         RealPostTime = RealPostTime,
-                        PostType = PostType.Share_WithContent.ToString(), // "Chia sẻ bài thường" | "Chia sẻ bài reel"
+                        PostType = PostType.Share_WithContent, // "Chia sẻ bài thường" | "Chia sẻ bài reel"
                         Content = Content,
                         PosterName = personName,
                         PosterLink = personUrl,
                         LikeCount = LikeCount,
                         ShareCount = ShareCount,
                         CommentCount = CommentCount,
-                        PosterNote = "N/A",
+                        PosterNote = FBType.Unknown,
                     };
 
                     results.Posts.Add(postShare);
@@ -489,7 +490,7 @@ namespace CrawlFB_PW._1._0.DAO
                         ShareTimeRaw = PostTime,
                         ShareTimeReal = RealPostTime,
                         PersonLinkShare = personUrl,
-                        Note = PostStatus
+                        Note = PostStatus.ToString()
                     };
                     results.Shares.Add(share);
                 }
@@ -514,7 +515,7 @@ namespace CrawlFB_PW._1._0.DAO
                             LikeCount = LikeCount,
                             ShareCount = ShareCount,
                             CommentCount = CommentCount,
-                            PosterNote = "PERSON"
+                            PosterNote = FBType.Person
                         };
                         results.Posts.Add(postnormal);
                     }
@@ -612,54 +613,7 @@ namespace CrawlFB_PW._1._0.DAO
                 Libary.Instance.LogDebug( $"{Libary.IconFail}[PERSON-NAME] ❌ " + ex.Message);
             }
             return "N/A";
-        }
-        private async Task<PersonInfo> BuildPersonInfoAsync(IPage page, string personUrl, ProfileDB profile)
-        {
-            try
-            {
-                // ===============================
-                // 1️⃣ LẤY TÊN PERSON
-                // ===============================
-                string personName =
-                    await CrawlPostPersonDAO.Instance.GetFacebookNamePersonAsync(page);
-
-                if (string.IsNullOrWhiteSpace(personName))
-                    personName = "N/A";
-
-                // ===============================
-                // 2️⃣ CHECK TYPE (PERSON / PAGE / GROUP / UNKNOWN)
-                // ===============================
-                FBType personType = await PageDAO.Instance.CheckFBTypeAsync(page);
-
-
-
-                // ===============================
-                // 3️⃣ BUILD DTO PersonInfo (ĐÚNG FIELD)
-                // ===============================
-                var person = new PersonInfo
-                {
-                    PersonID = "",
-                    IDFBPerson = "N/A",                 // chưa extract
-                    PersonLink = personUrl,
-                    PersonName = personName,
-                    PersonInfoText = "N/A",             // bio chưa crawl
-                    PersonNote = personType.ToString(),            // type từ PageDAO
-                    PersonTimeSave = DateTime.Now
-                        .ToString("yyyy-MM-dd HH:mm:ss")
-                };
-
-                // ===============================
-                // 4️⃣ LOG FORM
-                // ===============================
-               
-                return person;
-            }
-            catch (Exception ex)
-            {
-                Libary.Instance.LogTech( "❌ BuildPersonInfoAsync error: " + ex.Message );
-                return null;
-            }
-        }
+        }        
         public string NormalizeReelLink(string reelLink)
         {
             if (string.IsNullOrWhiteSpace(reelLink))

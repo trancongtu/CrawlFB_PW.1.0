@@ -29,6 +29,8 @@ using CrawlFB_PW._1._0.Enums;
 using CrawlFB_PW._1._0.DAO.Post;
 using CrawlFB_PW._1._0.ViewModels;
 using DocumentFormat.OpenXml.Office2019.Drawing.Animation.Model3D;
+using DocumentFormat.OpenXml.Wordprocessing;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 namespace CrawlFB_PW._1._0
 {
     public partial class FormTest : Form
@@ -133,8 +135,8 @@ namespace CrawlFB_PW._1._0
             string time = await GetPostTimeAsync(page);
             // 2️⃣ Check Type
             var type = await PageDAO.Instance.CheckFBTypeAsync(page);
-            info.PageType = type.ToString();
-           
+            info.PageType = type;
+
             AppendLog($"Thời gian bài viết: {time}");
             info.PageInfoText = time.ToString();
             
@@ -899,13 +901,14 @@ namespace CrawlFB_PW._1._0
                 return;
             }
            string urlgoc = url;
-            if (url.IndexOf("sorting_setting=", StringComparison.OrdinalIgnoreCase) < 0)
+          /*  if (url.IndexOf("sorting_setting=", StringComparison.OrdinalIgnoreCase) < 0)
             {
                 if (url.Contains("?"))
                     url += "&sorting_setting=CHRONOLOGICAL";
                 else
                     url += "?sorting_setting=CHRONOLOGICAL";
             }
+          */
             var page = await Ads.Instance.OpenNewTabAsync(profileId);
             Libary.Instance.SetProfileContext(profileId, "profile.ProfileName");
             await page.GotoAsync(url, new PageGotoOptions
@@ -924,36 +927,131 @@ namespace CrawlFB_PW._1._0
 }");
             await page.WaitForTimeoutAsync(1200);
 
-            int checkedPostCount = 0;
-            var feed = await CrawlPostPersonDAO.Instance.GetFeedContainerAsync(page);
-          
-            HashSet<string> seenPostKeys = new HashSet<string>();
-           
-            while (checkedPostCount < 10 )
+            AppendLog("");
+            AppendLog("══════════════════════════════════════════════════════");
+            AppendLog("🧪 TEST POPUP FULL");
+            AppendLog("══════════════════════════════════════════════════════");
+            var postDiv = await CrawlBaseDAO.Instance.GetFeedPostOriginalNormalAsync(page);
+            if (postDiv != null)
             {
-                var posts = await feed.QuerySelectorAllAsync("div[class='x1n2onr6 x1ja2u2z']");
-                foreach (var post in posts)
-                {
-                    checkedPostCount++;
+                AppendLog("tìm thấy PostDiv");
 
-                    // =========================
-                    // TEST PHOTO
-                    // =========================
-                 
-                 
-                    // =========================
-                    // KHÔNG PHẢI PHOTO → BỎ
-                    // =========================
-                    AppendLog("⛔ NOT PHOTO");
-                }
-
-
-                // scroll + CHỜ
-                await page.EvaluateAsync(@"() => window.scrollBy(0, document.body.scrollHeight)");
-                await page.WaitForTimeoutAsync(1500);
             }
+            else
+            {
+                AppendLog("tìm thấy PostDiv");
+            }
+            var postinfor = await postDiv.QuerySelectorAllAsync("div.xu06os2.x1ok221b");
+            foreach (var el in postinfor)
+            {
+                var txt = (await el.InnerTextAsync())?.Trim().ToLower();
+                if (ProcessingDAO.Instance.IsTime(txt))
+                {
+                    txt = TimeHelper.CleanTimeString(txt);
+                    //info.PostTime = txt;
+                    //info.RealPostTime = TimeHelper.ParseFacebookTime(txt);
+                    //Libary.Instance.LogTech($"{Libary.IconOK} [ORIGINAL POST] thời gian lấy trong hàm ok {txt}");
+                    AppendLog($"{Libary.IconOK} [ORIGINAL POST] thời gian lấy trong hàm ok {txt}");
+                }
+            }
+            var (LikeCount, CommentCount, ShareCount) = await CrawlBaseDAO.Instance.ExtractPostInteractionsAsync(postDiv);
+            AppendLog($"Lấy tương tác: Like {LikeCount}, Comment {CommentCount}, Share {ShareCount}");
+            var (pageName, pageLink) = await CrawlBaseDAO.Instance.GetPageContainerFromFeedAsync(postDiv);
+            AppendLog($"Lấy thông tin page: name {pageName}, link {pageLink}");
+            var (posterName, posterLink) = await PopupDAO.Instance.GetPosterGroupsPopupPost(postDiv);
+            AppendLog($"Lấy thông tin người đăng: name {posterName}, link {posterLink}");
+            var content = await PopupDAO.Instance.GetContentPopup(postDiv);
+            AppendLog($"Lấy nội dung: {content}");
+            /*
+                    var dialog = await PopupDAO.Instance.GetFeedPopupAsync(page);
+
+                    if (dialog == null)
+                    {
+                        AppendLog("❌ Không tìm thấy popup dialog");
+                        return;
+                    }
+
+                    AppendLog("✅ Found popup dialog");
+
+                    // ===============================
+                    // 👤 POSTER
+                    // ===============================
+                    var (name, link) = await PopupDAO.Instance.GetPosterPopup(dialog);
 
 
+                    //======
+                    bool isGroup = !string.IsNullOrWhiteSpace(url) &&
+                       url.Contains("/groups/");
+
+                    if (isGroup)
+                    {
+                        AppendLog($"👤 Groups NAME   : {name}");
+                        AppendLog($"🔗 Groups LINK   : {link}");
+                        // 🔥 dùng dialog thay vì postDiv
+                        var (posterName, posterLink) = await PopupDAO.Instance.GetPosterGroupsPopupPost(dialog);
+
+                        if (!string.IsNullOrWhiteSpace(posterLink) && posterLink != "N/A")
+                        {
+
+                            AppendLog($"👤 Poster Groups NAME   : {posterName}");
+                            AppendLog($"🔗 Poster Groups LINK   : {posterLink}");
+                        }
+
+                    }
+                    else
+                    {
+
+                        AppendLog($"👤 Fanpage/Person NAME   : {name}");
+                        AppendLog($"🔗 Fanpage/Person LINK   : {link}");
+
+                    }
+                    // ===============================
+                    // ⏰ TIME
+                    // ===============================
+                    var (time, realTime) = await PopupDAO.Instance.GetTimePopup(dialog);
+
+                    AppendLog($"⏰ TIME   : {time}");
+                    AppendLog($"📅 REAL   : {realTime}");
+
+                    // ===============================
+                    // 📝 CONTENT (CALL DAO)
+                    // ===============================
+                    var content = await PopupDAO.Instance.GetContentPopup(dialog);
+
+                    AppendLog($"📝 CONTENT LEN : {content.Length}");
+
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        AppendLog("📄 CONTENT:");
+                        AppendLog(content);
+                    }
+                    else
+                    {
+                        AppendLog("❌ CONTENT EMPTY");
+                    }
+                    // ===============================
+                    // 📊 INTERACTION
+                    // ===============================
+                    var (like, comment, share) = await PopupDAO.Instance.GetInteractionPopup(dialog);
+
+                    AppendLog($"👍 LIKE   : {like}");
+                    AppendLog($"💬 COMMENT: {comment}");
+                    AppendLog($"🔁 SHARE  : {share}");
+
+                    // ===============================
+                    // 🔍 DEBUG THÊM (QUAN TRỌNG)
+                    // ===============================
+                    var feedBlocks = await dialog.QuerySelectorAllAsync("div.x1n2onr6");
+                    AppendLog($"📦 FeedBlocks: {feedBlocks.Count}");
+
+                    var spans = await dialog.QuerySelectorAllAsync("span");
+                    AppendLog($"📊 TotalSpan: {spans.Count}");
+
+                    // ===============================
+                    AppendLog("══════════════════════════════════════════════════════");
+                    AppendLog("✅ TEST DONE");
+                    AppendLog("══════════════════════════════════════════════════════");
+            */
         }
         private PostKind DetectPostKind(RawPostInfo raw)
         {
@@ -1719,7 +1817,7 @@ namespace CrawlFB_PW._1._0
                 if (samePoster && samePage && similarity >= 0.7)
                 {
                     // ✅ REEL ĐĂNG TRỰC TIẾP TRONG GROUP (1 BÀI)
-                    reelPost.PostType = PostType.page_Real_Cap.ToString();
+                    reelPost.PostType = PostType.page_Real_Cap;
 
                     Libary.Instance.LogTech("[Reel] ✅ GROUP REEL (1 post, NOT share)");
 
@@ -1901,7 +1999,7 @@ namespace CrawlFB_PW._1._0
 
                 PosterName = info.PosterName,
                 PosterLink = info.PosterLink,
-                PosterNote = info.PosterNote.ToString(),
+                PosterNote = info.PosterNote,
 
                 PageName = info.PageName,
                 PageLink = info.PageLink,
@@ -1912,8 +2010,160 @@ namespace CrawlFB_PW._1._0
                 CommentCount = info.CommentCount,
                 ShareCount = info.ShareCount,
 
-                PostType = info.PostType.ToString()
+                PostType = info.PostType
             };
+        }
+
+        private async void btn_TestPopup_Click(object sender, EventArgs e)
+        {
+            string profileId = txbProfileId.Text.Trim();
+            string url = txbUrl.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                MessageBox.Show("Không có URL");
+                return;
+            }
+            string urlgoc = url;
+            var page = await Ads.Instance.OpenNewTabAsync(profileId);
+            Libary.Instance.SetProfileContext(profileId, "profile.ProfileName");
+            await page.GotoAsync(url, new PageGotoOptions
+            {
+                Timeout = AppConfig.DEFAULT_TIMEOUT,
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
+            // scroll nhẹ 1–2 lần
+            await page.EvaluateAsync(@"() => {window.scrollBy(0, document.body.scrollHeight);}");
+            await page.WaitForTimeoutAsync(1200);
+
+            await page.EvaluateAsync(@"() => {window.scrollBy(0, document.body.scrollHeight);}");
+            await page.WaitForTimeoutAsync(1200);
+            AppendLog("");
+            AppendLog("══════════════════════════════════════════════════════");
+            AppendLog("🧪 TEST POPUP FULL");
+            AppendLog("══════════════════════════════════════════════════════");
+            var postDiv = await CrawlBaseDAO.Instance.GetFeedPostOriginalNormalAsync(page);
+            if (postDiv != null)
+            {
+                AppendLog("tìm thấy PostDiv");
+
+            }
+            else
+            {
+                AppendLog("tìm thấy PostDiv");
+            }
+            var postinfor = await postDiv.QuerySelectorAllAsync("div.xu06os2.x1ok221b");
+
+            string timeText = null;
+
+            foreach (var el in postinfor)
+            {
+                var txt = (await el.InnerTextAsync())?.Trim().ToLower();
+
+                if (string.IsNullOrEmpty(txt))
+                    continue;
+
+                if (ProcessingDAO.Instance.IsTime(txt))
+                {
+                    timeText = TimeHelper.CleanTimeString(txt);
+
+                    AppendLog($"{Libary.IconOK} [ORIGINAL POST] lấy time đầu tiên: {timeText}");
+
+                    break; // 🔥 QUAN TRỌNG: dừng ngay
+                }
+            }
+            var (LikeCount, CommentCount, ShareCount) = await CrawlBaseDAO.Instance.ExtractPostInteractionsAsync(postDiv);
+            AppendLog($"Lấy tương tác: Like {LikeCount}, Comment {CommentCount}, Share {ShareCount}");
+            var content = await PopupDAO.Instance.GetContentPopup(postDiv);
+            AppendLog($"Lấy nội dung: {content}");
+            List<(string Src, string Alt)> photos = await CrawlBaseDAO.Instance.DetectPhotosFromPostAsync(postDiv);
+            foreach (var p in photos)
+            {
+                AppendLog($"Ảnh: {p.Src} | ALT: {p.Alt}");
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    content = ""; // 🔥 đảm bảo không null                                 
+                        if (!string.IsNullOrWhiteSpace(p.Alt))
+                        {
+                            content += (content.Length == 0 ? "" : "\n") + p.Alt;
+                        }                   
+                }
+            }              
+            // ===============================
+            // 👤 POSTER
+            // ===============================
+            string PageName = "", PageLink = "", PageID = "", ContainerIdFB= "";
+            string PosterName, PosterLink, PosterIdFB, PosterNote = "";
+            //lấy kết quả từ crawl
+            var (nametemp, linktemp) = await PopupDAO.Instance.GetPosterPopup(postDiv);
+            // check type nó
+            var (containerType, idfbContainer) = await CrawlBaseDAO.Instance.TryCheckTypeFullAsync(page, linktemp);
+            AppendLog($"ContainerType: {containerType}");
+            // Gán IDFB container
+            // xem có phải Page trong DB k
+            if (!string.IsNullOrWhiteSpace(idfbContainer) && idfbContainer != "N/A") 
+            {
+                var dbPage = SQLDAO.Instance.GetPageByIDFB(idfbContainer);
+                if (dbPage != null)
+                {
+                    PageID = dbPage.PageID;
+                    PageName = dbPage.PageName;
+                    PageLink = dbPage.PageLink;
+                    ContainerIdFB = dbPage.IDFBPage;
+
+                    AppendLog($"Page đã có trong DB {PageName}");
+                }
+            }
+            if (containerType == FBType.Fanpage)
+            {
+                PosterName = nametemp;
+                PosterLink = linktemp;
+                PosterIdFB = ContainerIdFB;
+                PosterNote = FBType.Fanpage.ToString();
+                PageName = nametemp;
+                PageLink = linktemp;
+                AppendLog($"Page là Fanpage container là poster luôn {PageName} // PageLink {PageLink}");
+            }
+            else if (containerType == FBType.GroupOn)
+            {
+                (PosterName, PosterLink) = await PopupDAO.Instance.GetPosterGroupsPopupPost(postDiv);
+
+                var (posterType, idfbPoster) = await CrawlBaseDAO.Instance.TryCheckTypeFullAsync(page, PosterLink);
+
+                if (posterType != FBType.Unknown) AppendLog($"PosterNote: không xác định");
+
+                if (!string.IsNullOrWhiteSpace(idfbPoster) && idfbPoster != "N/A") PosterIdFB = idfbPoster;
+                AppendLog($"Page là Group container: {PageName} // PageLink {PageLink}");
+                AppendLog($"Poster người đăng là: {PosterName} // Link {PosterLink} // idfb {idfbPoster}");
+            }
+
+            // 🔥 PERSON (THIẾU – BỔ SUNG)
+            // ========================
+            else if (containerType == FBType.Person ||
+                 containerType == FBType.PersonKOL)
+            {
+                // ❗ container không tồn tại
+              PageName = "N/A";
+              PageLink = "N/A";
+              ContainerIdFB = null;
+              PosterName = nametemp.ToString();
+               PosterLink = linktemp;
+                // poster chính là user
+                if (ProcessingHelper.IsValidContent(linktemp))
+                {
+                    var (posterType, idfbPoster) =
+                        await CrawlBaseDAO.Instance.TryCheckTypeFullAsync(page, linktemp);
+
+                    if (posterType != FBType.Unknown)
+                        PosterNote = posterType.ToString();
+
+                    if (ProcessingHelper.IsValidContent(idfbPoster))
+                        PosterIdFB = idfbPoster;
+                }
+
+                AppendLog($"không phải PAge mà person {PosterName} // Link {PosterLink}");
+            }
+           
         }
     }
 }

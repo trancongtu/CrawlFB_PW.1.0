@@ -276,8 +276,7 @@ namespace CrawlFB_PW._1._0.Page
                                 if (!string.IsNullOrEmpty(info.PageLink))
                                     item.PageLink = info.PageLink;
 
-                                if (!string.IsNullOrEmpty(info.IDFBPage)
-                                    && info.IDFBPage != "N/A")
+                                if (!string.IsNullOrWhiteSpace(info.IDFBPage))
                                 {
                                     item.PageID = info.IDFBPage;
                                 }
@@ -363,7 +362,7 @@ namespace CrawlFB_PW._1._0.Page
                         PageEvaluation = vm.PageEvaluation,
                         PageInfoText = vm.PageInfoText,
                         TimeLastPost = vm.TimeLastPost,
-                        PageTimeSave = vm.PageTimeSave
+                        PageTimeSave = vm.PageTimeSave?.ToString("yyyy-MM-dd HH:mm:ss")
                     };
 
                     SQLDAO.Instance.InsertOrIgnorePageInfo(dto);

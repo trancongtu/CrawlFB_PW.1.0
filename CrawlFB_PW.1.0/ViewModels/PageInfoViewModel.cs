@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CrawlFB_PW._1._0.Enums;
 using CrawlFB_PW._1._0.Helper;
 
 namespace CrawlFB_PW._1._0.ViewModels
@@ -9,20 +10,21 @@ namespace CrawlFB_PW._1._0.ViewModels
     /// </summary>
     public class PageInfoViewModel : BaseViewModel
     {
-        public string PageID { get; set; } = "N/A";
-        public string IDFBPage { get; set; } = "N/A";
+        public string PageID { get; set; }
+        public string IDFBPage { get; set; }
 
-        public string PageLink { get; set; } = "N/A";
-        public string PageName { get; set; } = "N/A";
-        public string PageType { get; set; } = "Unknown";
+        public string PageLink { get; set; }
+        public string PageName { get; set; }
+        public FBType PageType { get; set; } = FBType.Unknown;
 
-        public string PageMembers { get; set; } = "N/A";
-        public string PageInteraction { get; set; } = "N/A";
-        public string PageEvaluation { get; set; } = "N/A";
-        public string PageInfoText { get; set; } = "N/A";
+        public string PageMembers { get; set; }
+        public string PageInteraction { get; set; }
+        public string PageEvaluation { get; set; }
+        public string PageInfoText { get; set; }
 
         public DateTime? TimeLastPost { get; set; }
 
+        // 🔥 chỉ hiển thị mới dùng "N/A"
         public string TimeLastPostView =>
             TimeLastPost.HasValue
                 ? TimeHelper.NormalizeTime(TimeLastPost.Value)
@@ -30,8 +32,12 @@ namespace CrawlFB_PW._1._0.ViewModels
 
         public bool IsScanned { get; set; } = false;
 
-        public string PageTimeSave { get; set; }
-            = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        public DateTime? PageTimeSave { get; set; }
+
+        public string PageTimeSaveView =>
+            PageTimeSave.HasValue
+                ? PageTimeSave.Value.ToString("yyyy-MM-dd HH:mm:ss")
+                : "N/A";
 
         public List<PostInfoViewModel> Posts { get; }
             = new List<PostInfoViewModel>();

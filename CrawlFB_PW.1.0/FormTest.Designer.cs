@@ -32,6 +32,7 @@
             this.btnTest = new System.Windows.Forms.Button();
             this.txbProfileId = new System.Windows.Forms.TextBox();
             this.rtbLog = new System.Windows.Forms.RichTextBox();
+            this.btn_TestPopup = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // txbUrl
@@ -68,11 +69,22 @@
             this.rtbLog.TabIndex = 3;
             this.rtbLog.Text = "";
             // 
+            // btn_TestPopup
+            // 
+            this.btn_TestPopup.Location = new System.Drawing.Point(40, 12);
+            this.btn_TestPopup.Name = "btn_TestPopup";
+            this.btn_TestPopup.Size = new System.Drawing.Size(97, 23);
+            this.btn_TestPopup.TabIndex = 4;
+            this.btn_TestPopup.Text = "btn_TestPopup";
+            this.btn_TestPopup.UseVisualStyleBackColor = true;
+            this.btn_TestPopup.Click += new System.EventHandler(this.btn_TestPopup_Click);
+            // 
             // FormTest
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.btn_TestPopup);
             this.Controls.Add(this.rtbLog);
             this.Controls.Add(this.txbProfileId);
             this.Controls.Add(this.btnTest);
@@ -90,5 +102,6 @@
         private System.Windows.Forms.Button btnTest;
         private System.Windows.Forms.TextBox txbProfileId;
         private System.Windows.Forms.RichTextBox rtbLog;
+        private System.Windows.Forms.Button btn_TestPopup;
     }
 }

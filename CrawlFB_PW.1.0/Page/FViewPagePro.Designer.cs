@@ -34,10 +34,12 @@
             this.accordionControl1 = new DevExpress.XtraBars.Navigation.AccordionControl();
             this.ACMenu = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.ACEPageMain = new DevExpress.XtraBars.Navigation.AccordionControlElement();
+            this.ACEPageAdded = new DevExpress.XtraBars.Navigation.AccordionControlElement();
+            this.ACEPageCrawl = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.ACEPageNote = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.ACEPageMonitor = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.ACPostPage = new DevExpress.XtraBars.Navigation.AccordionControlElement();
-            this.ACEPateMain = new DevExpress.XtraBars.Navigation.AccordionControlElement();
+            this.ACEPostAllPage = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.ACEPostPageNote = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.ACEPostPageMonitor = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.fluentDesignFormControl1 = new DevExpress.XtraBars.FluentDesignSystem.FluentDesignFormControl();
@@ -87,6 +89,8 @@
             // 
             this.ACMenu.Elements.AddRange(new DevExpress.XtraBars.Navigation.AccordionControlElement[] {
             this.ACEPageMain,
+            this.ACEPageAdded,
+            this.ACEPageCrawl,
             this.ACEPageNote,
             this.ACEPageMonitor});
             this.ACMenu.Expanded = true;
@@ -99,6 +103,21 @@
             this.ACEPageMain.Name = "ACEPageMain";
             this.ACEPageMain.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
             this.ACEPageMain.Text = "Tổng Page";
+            // 
+            // ACEPageAdded
+            // 
+            this.ACEPageAdded.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("ACEPageAdded.ImageOptions.Image")));
+            this.ACEPageAdded.Name = "ACEPageAdded";
+            this.ACEPageAdded.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
+            this.ACEPageAdded.Text = "Page đã Add";
+            // 
+            // ACEPageCrawl
+            // 
+            this.ACEPageCrawl.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("ACEPageCrawl.ImageOptions.Image")));
+            this.ACEPageCrawl.Name = "ACEPageCrawl";
+            this.ACEPageCrawl.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
+            this.ACEPageCrawl.Text = "Page Chưa quét";
+            this.ACEPageCrawl.Click += new System.EventHandler(this.ACEPageCrawl_Click);
             // 
             // ACEPageNote
             // 
@@ -117,20 +136,20 @@
             // ACPostPage
             // 
             this.ACPostPage.Elements.AddRange(new DevExpress.XtraBars.Navigation.AccordionControlElement[] {
-            this.ACEPateMain,
+            this.ACEPostAllPage,
             this.ACEPostPageNote,
             this.ACEPostPageMonitor});
             this.ACPostPage.Expanded = true;
             this.ACPostPage.Name = "ACPostPage";
             this.ACPostPage.Text = "Bài Viết Page";
             // 
-            // ACEPateMain
+            // ACEPostAllPage
             // 
-            this.ACEPateMain.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("ACEPateMain.ImageOptions.Image")));
-            this.ACEPateMain.Name = "ACEPateMain";
-            this.ACEPateMain.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
-            this.ACEPateMain.Text = "Bài Viết All Page";
-            this.ACEPateMain.Click += new System.EventHandler(this.ACEPateMain_Click);
+            this.ACEPostAllPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("ACEPostAllPage.ImageOptions.Image")));
+            this.ACEPostAllPage.Name = "ACEPostAllPage";
+            this.ACEPostAllPage.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
+            this.ACEPostAllPage.Text = "Bài Viết All Page";
+            this.ACEPostAllPage.Click += new System.EventHandler(this.ACEPateMain_Click);
             // 
             // ACEPostPageNote
             // 
@@ -325,8 +344,10 @@
         private DevExpress.XtraBars.BarButtonItem barButtonItem1;
         private DevExpress.XtraBars.BarButtonItem barButtonItem2;
         private DevExpress.XtraBars.Navigation.AccordionControlElement ACPostPage;
-        private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPateMain;
+        private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPostAllPage;
         private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPostPageNote;
         private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPostPageMonitor;
+        private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPageAdded;
+        private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPageCrawl;
     }
 }

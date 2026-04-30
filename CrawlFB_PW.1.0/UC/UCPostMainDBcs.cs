@@ -221,5 +221,56 @@ namespace CrawlFB_PW._1._0.UC
                 MessageBox.Show("❌ Lỗi xuất Excel: " + ex.Message);
             }
         }
+
+        private void btn_DeletePost_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var selectedRows = gridView1.GetSelectedRows();
+
+            if (selectedRows.Length == 0)
+            {
+                MessageBox.Show("⚠ Vui lòng chọn bài cần xóa!");
+                return;
+            }
+
+            if (MessageBox.Show(
+                $"Bạn có chắc muốn xóa {selectedRows.Length} bài viết?",
+                "Xác nhận",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
+
+            var postIds = new List<string>();
+
+            foreach (var rowHandle in selectedRows)
+            {
+                var row = gridView1.GetDataRow(rowHandle);
+                if (row == null) continue;
+
+                var postId = row["PostID"]?.ToString();
+                if (!string.IsNullOrEmpty(postId))
+                    postIds.Add(postId);
+            }
+
+            if (postIds.Count == 0)
+            {
+                MessageBox.Show("❌ Không lấy được PostID!");
+                return;
+            }
+
+            try
+            {
+                // 🔥 GỌI DAO XÓA
+                int deleted = SQLDAO.Instance.DeletePosts(postIds);
+
+                MessageBox.Show($"✅ Đã xóa {deleted} bài!");
+
+                // 🔄 reload lại grid
+                LoadSource();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ Lỗi xóa: " + ex.Message);
+            }
+        }
     }
 }

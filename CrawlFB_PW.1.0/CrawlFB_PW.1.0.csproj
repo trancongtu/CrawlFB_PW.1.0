@@ -66,6 +66,7 @@
     <Reference Include="DevExpress.Charts.v22.2.Core, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
     <Reference Include="DevExpress.Data.Desktop.v22.2" />
     <Reference Include="DevExpress.Data.v22.2" />
+    <Reference Include="DevExpress.Images.v22.2, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
     <Reference Include="DevExpress.Printing.v22.2.Core" />
     <Reference Include="DevExpress.Utils.v22.2" />
     <Reference Include="DevExpress.Utils.v22.2.UI, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a" />
@@ -224,11 +225,23 @@
     <Compile Include="Auto\FAddPageAuto.Designer.cs">
       <DependentUpon>FAddPageAuto.cs</DependentUpon>
     </Compile>
+    <Compile Include="Auto\FAutoCrawlPageMonitorAdmin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Auto\FAutoCrawlPageMonitorAdmin.Designer.cs">
+      <DependentUpon>FAutoCrawlPageMonitorAdmin.cs</DependentUpon>
+    </Compile>
     <Compile Include="Auto\FAutoCrawlPageMonitor.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Auto\FAutoCrawlPageMonitor.Designer.cs">
       <DependentUpon>FAutoCrawlPageMonitor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Auto\FViewPostAuto.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Auto\FViewPostAuto.Designer.cs">
+      <DependentUpon>FViewPostAuto.cs</DependentUpon>
     </Compile>
     <Compile Include="Check\DOMCheck.cs" />
     <Compile Include="Check\DomCrawlerTester.cs" />
@@ -242,13 +255,18 @@
     <Compile Include="DAO\AdsPower\AdsPowerPlaywrightManager.cs" />
     <Compile Include="DAO\AutoDAO.cs" />
     <Compile Include="DAO\Auto\AutoPageDAO.cs" />
+    <Compile Include="DAO\Auto\AutoService.cs" />
     <Compile Include="DAO\CrawlBaseDAO.cs" />
-    <Compile Include="DAO\CrawlPostReelDAO.cs" />
+    <Compile Include="DAO\Data\PostBatchBuilder.cs" />
+    <Compile Include="DAO\Page\CrawlPostReelDAO.cs" />
     <Compile Include="DAO\KeywordDAO.cs" />
     <Compile Include="DAO\Page\FirstScanPostPageDAO.cs" />
+    <Compile Include="DAO\Page\PopupDAO.cs" />
     <Compile Include="DAO\Person\CrawlPostPersonDAO.cs" />
     <Compile Include="DAO\DatabaseDAO.cs" />
     <Compile Include="DAO\phantich\AnalyzeSQLDAO.cs" />
+    <Compile Include="DAO\Server\Session.cs" />
+    <Compile Include="DAO\Server\SQLDAO_Server.cs" />
     <Compile Include="Dashbroad\FPostDashboardHTML.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -256,9 +274,28 @@
       <DependentUpon>FPostDashboardHTML.cs</DependentUpon>
     </Compile>
     <Compile Include="DTO\PostInfo.cs" />
+    <Compile Include="Enums\SystemIds.cs" />
+    <Compile Include="FLogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FLogin.Designer.cs">
+      <DependentUpon>FLogin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FUser_Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FUser_Main.Designer.cs">
+      <DependentUpon>FUser_Main.cs</DependentUpon>
+    </Compile>
     <Compile Include="Helper\dashbroad\PostHtmlBuilder.cs" />
+    <Compile Include="Helper\Data\DataReaderExtensions.cs" />
+    <Compile Include="Helper\Data\DataRowExtensions.cs" />
+    <Compile Include="Helper\Data\PostTypeHelper.cs" />
+    <Compile Include="Helper\Data\SqlBulkHelper.cs" />
     <Compile Include="Helper\Log\TestLogHelper.cs" />
     <Compile Include="Helper\Mapper\PostMapper.cs" />
+    <Compile Include="Helper\RecentPostCache.cs" />
+    <Compile Include="Helper\ScrollManager.cs" />
     <Compile Include="Page\FSelectPageUpdate.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -437,12 +474,6 @@
     <Compile Include="FormTest.Designer.cs">
       <DependentUpon>FormTest.cs</DependentUpon>
     </Compile>
-    <Compile Include="Auto\FAutoSupervisePage.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Auto\FAutoSupervisePage.Designer.cs">
-      <DependentUpon>FAutoSupervisePage.cs</DependentUpon>
-    </Compile>
     <Compile Include="Page\FScanPostPage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -517,7 +548,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Runtime\PageRuntimeContext.cs" />
+    <Compile Include="Service\AutoRunTime\AutoSchedulerService.cs" />
+    <Compile Include="Service\AutoRunTime\PageRuntime.cs" />
     <Compile Include="Service\PageDistributionService.cs" />
+    <Compile Include="Service\PageInfoCacheService.cs" />
+    <Compile Include="Service\PostCacheItem.cs" />
     <Compile Include="Share\FCrawlPostShare.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -627,14 +663,23 @@
     <EmbeddedResource Include="Auto\FAddPageAuto.resx">
       <DependentUpon>FAddPageAuto.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Auto\FAutoCrawlPageMonitorAdmin.resx">
+      <DependentUpon>FAutoCrawlPageMonitorAdmin.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Auto\FAutoCrawlPageMonitor.resx">
       <DependentUpon>FAutoCrawlPageMonitor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Auto\FViewPostAuto.resx">
+      <DependentUpon>FViewPostAuto.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Check\FCheckDOM.resx">
       <DependentUpon>FCheckDOM.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Dashbroad\FPostDashboardHTML.resx">
       <DependentUpon>FPostDashboardHTML.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FUser_Main.resx">
+      <DependentUpon>FUser_Main.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Page\FSelectPageUpdate.resx">
       <DependentUpon>FSelectPageUpdate.cs</DependentUpon>
@@ -695,9 +740,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormTest.resx">
       <DependentUpon>FormTest.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Auto\FAutoSupervisePage.resx">
-      <DependentUpon>FAutoSupervisePage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Page\FScanPostPage.resx">
       <DependentUpon>FScanPostPage.cs</DependentUpon>

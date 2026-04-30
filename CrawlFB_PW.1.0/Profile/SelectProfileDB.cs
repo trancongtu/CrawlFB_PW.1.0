@@ -5,6 +5,9 @@ using System.Windows.Forms;
 using CrawlFB_PW._1._0.DAO;
 using CrawlFB_PW._1._0.DTO;
 using CrawlFB_PW._1._0.Helper;
+using System.Drawing;
+using System.Threading.Tasks;
+using Ads = CrawlFB_PW._1._0.DAO.AdsPowerPlaywrightManager;
 namespace CrawlFB_PW._1._0.Profile
 {
     public partial class SelectProfileDB : Form
@@ -13,10 +16,13 @@ namespace CrawlFB_PW._1._0.Profile
         private List<ProfileDB> listProfiles;
         private DevExpress.XtraEditors.Repository.RepositoryItemCheckEdit repoCheck;
         private Dictionary<int, bool> selectedState = new Dictionary<int, bool>();
-
-        public SelectProfileDB()
+        private string _mode;
+        private ManagerProfileDAO managerDao = new ManagerProfileDAO();
+        
+        public SelectProfileDB(string mode = "normal")
         {
             InitializeComponent();
+            _mode = mode;
             profileDao = new ProfileInfoDAO();
             InitGrid();
             this.Load += SelectProfileDB_Load;
@@ -25,6 +31,34 @@ namespace CrawlFB_PW._1._0.Profile
         private void SelectProfileDB_Load(object sender, EventArgs e)
         {
             LoadProfilesFromDB();
+            if (_mode == "auto")
+            {
+                 LoadTabSmart();
+            }
+        }
+        private void LoadTabSmart()
+        {
+            var managerDao = new ManagerProfileDAO();
+            var adsManager = AdsPowerPlaywrightManager.Instance;
+
+            foreach (var p in listProfiles)
+            {
+                bool isActive = adsManager.IsProfileActive(p.IDAdbrowser);
+
+                if (isActive)
+                {
+                    // 🔥 đang chạy thật → dùng mapping
+                    p.UseTab = managerDao.CountMappingByProfile(p.ID);
+                }
+                else
+                {
+                    // 🔥 không chạy → clear rác
+                    managerDao.DeleteByProfile(p.ID);
+                    p.UseTab = 0;
+                }
+            }
+
+            gridView1.RefreshData();
         }
 
         private void InitGrid()
@@ -45,6 +79,8 @@ namespace CrawlFB_PW._1._0.Profile
             gv.Columns.AddVisible("ProfileName", "Tên Profile").Width = 200;
             gv.Columns.AddVisible("ProfileStatus", "Trạng thái").Width = 100;
             gv.Columns.AddVisible("UseTab", "Tab").Width = 60;
+            gv.Columns["UseTab"].DisplayFormat.FormatType = DevExpress.Utils.FormatType.Custom;
+            gv.Columns["UseTab"].DisplayFormat.FormatString = "{0}/3";
             // ============================
             // CỘT STT (UNBOUND)
             // ============================
@@ -88,6 +124,44 @@ namespace CrawlFB_PW._1._0.Profile
             // ============================
             gv.CustomUnboundColumnData -= Gv_CustomUnboundColumnData;
             gv.CustomUnboundColumnData += Gv_CustomUnboundColumnData;
+            gv.ShowingEditor += (s, e) =>
+            {
+                if (_mode != "auto") return;
+
+                var view = s as DevExpress.XtraGrid.Views.Grid.GridView;
+
+                int used = Convert.ToInt32(
+                    view.GetRowCellValue(view.FocusedRowHandle, "UseTab")
+                );
+
+                if (used >= 3)
+                {
+                    e.Cancel = true;
+
+                    MessageBox.Show(
+                        "❌ Profile đã dùng đủ 3 tab!",
+                        "Giới hạn tab",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+                }
+            };
+            gv.RowStyle += (s, e) =>
+            {
+                if (e.RowHandle < 0) return;
+
+                var view = s as DevExpress.XtraGrid.Views.Grid.GridView;
+
+                int used = Convert.ToInt32(
+                    view.GetRowCellValue(e.RowHandle, "UseTab")
+                );
+
+                if (_mode == "auto" && used >= 3)
+                {
+                    e.Appearance.BackColor = Color.LightCoral;
+                    e.Appearance.ForeColor = Color.White;
+                }
+            };
         }
 
         private void Gv_CustomUnboundColumnData(object sender, DevExpress.XtraGrid.Views.Base.CustomColumnDataEventArgs e)
@@ -122,11 +196,20 @@ namespace CrawlFB_PW._1._0.Profile
         {
             listProfiles = profileDao.GetAllProfiles();
 
-            // chuyển UseTab null → 0
             foreach (var p in listProfiles)
             {
-                if (p.UseTab < 0) p.UseTab = 0;
-                if (string.IsNullOrEmpty(p.ProfileStatus)) p.ProfileStatus = "Chưa kiểm tra";
+                // 🔥 AUTO MODE → lấy realtime tab
+                if (_mode == "auto")
+                {
+                    p.UseTab = managerDao.CountMappingByProfile(p.ID);
+                }
+                else
+                {
+                    if (p.UseTab < 0) p.UseTab = 0;
+                }
+
+                if (string.IsNullOrEmpty(p.ProfileStatus))
+                    p.ProfileStatus = "Chưa kiểm tra";
             }
 
             gridControl1.DataSource = listProfiles;

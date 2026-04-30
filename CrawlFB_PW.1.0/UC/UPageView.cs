@@ -16,6 +16,10 @@ using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Columns;
 using FBType = CrawlFB_PW._1._0.Enums.FBType;
 using CrawlFB_PW._1._0.Helper;
+using CrawlFB_PW._1._0.Page;
+using CrawlFB_PW._1._0.Service;
+using CrawlFB_PW._1._0.Helper.Mapper;
+using CrawlFB_PW._1._0.ViewModels;
 namespace CrawlFB_PW._1._0.UC
 {
     public partial class UPageView : UserControl
@@ -28,6 +32,19 @@ namespace CrawlFB_PW._1._0.UC
         private Panel cardComments;
         private Panel cardPosts;
         private Panel cardFollowers;
+        private UIPagerBarHelper pager;
+        private int _postPageIndex = 1;
+        private int _postPageSize = 50;
+        private string _currentPostPageId;
+        //-== khai báo grid post kèm paging
+        private Panel panelPostContainer;
+        private GridControl gridPost;
+        private GridView gvPost;
+        private Panel panelPaging;
+        private int _postTotalRows = 0;
+        private TextBox txtPageJump;
+        private Label lblPostPage;
+        private Button btnFirst, btnPrev, btnNext, btnLast;
         public UPageView()
         {
             InitializeComponent();
@@ -37,7 +54,12 @@ namespace CrawlFB_PW._1._0.UC
             txb_PageShearch.EditValueChanged += Txb_PageShearch_EditValueChanged;
 
 
-            panelControlDetail.AutoScroll = true;       
+            panelControlDetail.AutoScroll = true;
+            this.Load += (s, e) =>
+            {
+                InitPager();
+                InitPostUI();
+            };
         }     
         // ==================== KHỞI TẠO GRID ======================
         private void InitGrid()
@@ -56,6 +78,181 @@ namespace CrawlFB_PW._1._0.UC
             gv.RowCellStyle += GridView1_RowCellStyle;
             gv.CustomColumnDisplayText += GridView1_CustomColumnDisplayText;
 
+        }
+        private void InitPager()
+        {
+            pager = new UIPagerBarHelper();
+
+            pager.OnPageChanged = (pageIndex, pageSize) =>
+            {
+                if (!string.IsNullOrEmpty(_currentPostPageId))
+                {
+                    _postPageIndex = pageIndex;
+                    _postPageSize = pageSize;
+
+                    LoadPostPaging(_currentPostPageId, pageIndex, pageSize);
+                }
+                else
+                {
+                    LoadPage(pageIndex, pageSize);
+                }
+            };
+
+            pager.Init(barManager1, bar3); // ⚠ bạn đã có sẵn bar3 rồi
+        }
+        private void InitPostUI()
+        {
+            // ===== container =====
+            panelPostContainer = new Panel()
+            {
+                Dock = DockStyle.Fill,
+                Visible = false
+            };
+
+            // ===== grid =====
+            gridPost = new GridControl() { Dock = DockStyle.Fill };
+            gvPost = new GridView();
+            gridPost.MainView = gvPost;
+            gridPost.ViewCollection.Add(gvPost);
+
+            // ===== paging panel =====
+            panelPaging = new Panel()
+            {
+                Dock = DockStyle.Bottom,
+                Height = 35,
+                BackColor = Color.WhiteSmoke
+            };
+
+            // ===== tạo control trước =====
+            lblPostPage = new Label()
+            {
+                Text = "Trang 1 / 1",
+                AutoSize = true,
+                Top = 8,
+                Left = 150
+            };
+
+            btnFirst = new Button()
+            {
+                Text = "<<",
+                Width = 40,
+                Left = 10,
+                Top = 5
+            };
+
+            btnPrev = new Button()
+            {
+                Text = "<",
+                Width = 40,
+                Left = 60,
+                Top = 5
+            };
+
+            btnNext = new Button()
+            {
+                Text = ">",
+                Width = 40,
+                Left = 260,
+                Top = 5
+            };
+
+            btnLast = new Button()
+            {
+                Text = ">>",
+                Width = 40,
+                Left = 310,
+                Top = 5
+            };
+            txtPageJump = new TextBox()
+            {
+                Width = 50,
+                Top = 5,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            txtPageJump.Left = panelPaging.Width - txtPageJump.Width - 10;
+            // ===== event =====
+            btnFirst.Click += (s, e) =>
+            {
+                _postPageIndex = 1;
+                LoadPostPaging(_currentPostPageId, _postPageIndex, _postPageSize);
+            };
+
+            btnPrev.Click += (s, e) =>
+            {
+                if (_postPageIndex > 1)
+                {
+                    _postPageIndex--;
+                    LoadPostPaging(_currentPostPageId, _postPageIndex, _postPageSize);
+                }
+            };
+
+            btnNext.Click += (s, e) =>
+            {
+                int totalPages = (int)Math.Ceiling((double)_postTotalRows / _postPageSize);
+
+                if (_postPageIndex < totalPages)
+                {
+                    _postPageIndex++;
+                    LoadPostPaging(_currentPostPageId, _postPageIndex, _postPageSize);
+                }
+            };
+
+            btnLast.Click += (s, e) =>
+            {
+                int totalPages = Math.Max(1,
+                    (int)Math.Ceiling((double)_postTotalRows / _postPageSize));
+
+                _postPageIndex = totalPages;
+
+                LoadPostPaging(_currentPostPageId, _postPageIndex, _postPageSize);
+            };
+            // Enter để jump
+            txtPageJump.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    JumpToPage();
+                    e.SuppressKeyPress = true;
+                }
+            };
+            txtPageJump.KeyPress += (s, e) =>
+            {
+                if (!char.IsDigit(e.KeyChar) && e.KeyChar != (char)Keys.Back)
+                    e.Handled = true;
+            };
+            panelPaging.Resize += (s, e) =>
+            {
+                txtPageJump.Left = panelPaging.Width - txtPageJump.Width - 10;
+            };
+            // ===== add sau khi tạo =====
+            panelPaging.Controls.Add(btnFirst);
+            panelPaging.Controls.Add(btnPrev);
+            panelPaging.Controls.Add(lblPostPage);
+            panelPaging.Controls.Add(btnNext);
+            panelPaging.Controls.Add(btnLast);
+            panelPaging.Controls.Add(txtPageJump);
+            // ===== add vào container =====
+            panelPostContainer.Controls.Add(gridPost);
+            panelPostContainer.Controls.Add(panelPaging);
+
+            panelControlDetail.Controls.Add(panelPostContainer);
+            UIPostGridHelper.ApplyFakeLink(gvPost, "Địa chỉ", "LinkThật");
+        }
+        private void JumpToPage()
+        {
+            if (!int.TryParse(txtPageJump.Text, out int page))
+                return;
+
+            int totalPages = Math.Max(1,
+                (int)Math.Ceiling((double)_postTotalRows / _postPageSize));
+
+            // clamp
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+
+            _postPageIndex = page;
+
+            LoadPostPaging(_currentPostPageId, _postPageIndex, _postPageSize);
         }
         private void GridView1_RowCellClick(object sender, DevExpress.XtraGrid.Views.Grid.RowCellClickEventArgs e)
         {
@@ -137,35 +334,535 @@ namespace CrawlFB_PW._1._0.UC
         }
 
         // ======================= LOAD DATA ========================
+        
+        private void LoadPage(int pageIndex, int pageSize)
+        {
+            switch (currentViewType)
+            {
+                // ===== PAGE =====
+                case "PageAdded":
+                case "PageCrawl":
+                    LoadPagePagingByIscan(pageIndex, pageSize);
+                    break;
+                case "PageInfo":
+                    LoadPageInfoPaging(pageIndex, pageSize);
+                    break;
+                case "PageNote":
+                    LoadPageNotePaging(pageIndex, pageSize);
+                    break;
+                case "PageMonitor":
+                    LoadPageMonitorPaging(pageIndex, pageSize);
+                    break;
+
+                // ===== POST (giữ nguyên) =====
+                case "PostPageNote":
+                    LoadPostPageNotePaging(pageIndex, pageSize);
+                    break;
+
+                case "PostPageMonitor":
+                    LoadPostPageMonitorPaging(pageIndex, pageSize);
+                    break;
+
+                case "PostAllPage":
+                    LoadPostAllPagePaging(pageIndex, pageSize);
+                    break;
+            }
+        }
+        //1. Load theo trang của pagenote và pagemonitor
+        private void LoadPageNotePaging(int pageIndex, int pageSize)
+        {
+            int totalRows;
+
+            var dt = SQLDAO.Instance.GetPageNotePaging(
+                pageIndex,
+                pageSize,
+                out totalRows
+            );
+
+            currentTable = new DataTable();
+            currentTable.Columns.Add("Select", typeof(bool));
+            currentTable.Columns.Add("STT");
+            currentTable.Columns.Add("PageID");
+            currentTable.Columns.Add("Tên Page");
+            currentTable.Columns.Add("Địa chỉ");
+            currentTable.Columns.Add("Thông tin");
+            currentTable.Columns.Add("Thời gian lưu");
+            currentTable.Columns.Add("TimeLastPost", typeof(DateTime));
+
+            // dashboard
+            currentTable.Columns.Add("IDFBPage");
+            currentTable.Columns.Add("PageMembers");
+            currentTable.Columns.Add("PageInteraction");
+            currentTable.Columns.Add("PageEvaluation");
+            currentTable.Columns.Add("PageInfoText");
+            currentTable.Columns.Add("PageType");
+
+            int stt = (pageIndex - 1) * pageSize + 1;
+
+            foreach (DataRow r in dt.Rows)
+            {
+                string pageId = r["PageID"]?.ToString();
+                object timeSave = r["TimeSave"];
+
+                var info = PageInfoCacheService.Get(pageId);
+
+                if (info != null)
+                {
+                    currentTable.Rows.Add(
+                        false,
+                        stt++,
+                        info.PageID,
+                        info.PageName,
+                        info.PageLink,
+                        info.IsScanned ? "Đã quét" : "Chưa quét",
+                        info.PageTimeSave,
+                        info.TimeLastPost.HasValue
+                            ? (object)info.TimeLastPost.Value
+                            : DBNull.Value,
+
+                        info.IDFBPage,
+                        info.PageMembers,
+                        info.PageInteraction,
+                        info.PageEvaluation,
+                        info.PageInfoText,
+                        info.PageType
+                    );
+                }
+                else
+                {
+                    currentTable.Rows.Add(
+                        false,
+                        stt++,
+                        pageId,
+                        "(Không tìm thấy PageInfo)",
+                        "",
+                        "Chưa quét",
+                        timeSave,
+                        DBNull.Value,
+                        "", "", "", "", "", ""
+                    );
+                }
+            }
+
+            // UI giữ nguyên
+            gridView1.Columns.Clear();
+            gridControl1.DataSource = currentTable;
+
+            if (!gridView1.Columns.Contains(gridView1.Columns.ColumnByFieldName("Select")))
+            {
+                var col = gridView1.Columns.AddVisible("Select", "Chọn");
+                col.UnboundType = DevExpress.Data.UnboundColumnType.Boolean;
+                col.OptionsColumn.AllowEdit = true;
+                col.Width = 50;
+            }
+
+            gridView1.Columns["PageID"].Visible = false;
+            gridView1.Columns["PageMembers"].Visible = false;
+            gridView1.Columns["PageInteraction"].Visible = false;
+            gridView1.Columns["PageEvaluation"].Visible = false;
+            gridView1.Columns["PageInfoText"].Visible = false;
+            gridView1.Columns["Thời gian lưu"].Visible = false;
+
+            gridView1.BestFitColumns();
+
+            if (currentTable.Rows.Count > 0)
+                ShowPageDashboard(currentTable.Rows[0]);
+
+            pager.Update(totalRows);
+        }
+        private void LoadPageMonitorPaging(int pageIndex, int pageSize)
+        {
+            int totalRows;
+
+            var dt = SQLDAO.Instance.GetPageMonitorPaging(
+                pageIndex,
+                pageSize,
+                out totalRows
+            );
+
+            currentTable = new DataTable();
+            currentTable.Columns.Add("Select", typeof(bool));
+            currentTable.Columns.Add("STT");
+            currentTable.Columns.Add("PageID");
+            currentTable.Columns.Add("Tên Page");
+            currentTable.Columns.Add("Địa chỉ");
+           
+            // 🔥 monitor riêng
+            currentTable.Columns.Add("Trạng thái");
+            currentTable.Columns.Add("Auto");
+            currentTable.Columns.Add("Tổng bài đã quét");
+            currentTable.Columns.Add("Lần quét đầu");
+            currentTable.Columns.Add("Lần quét gần nhất");
+            currentTable.Columns.Add("TimeLastPost", typeof(DateTime));
+            // dashboard
+            currentTable.Columns.Add("IDFBPage");
+            currentTable.Columns.Add("PageMembers");
+            currentTable.Columns.Add("PageInteraction");
+            currentTable.Columns.Add("PageEvaluation");
+            currentTable.Columns.Add("PageInfoText");
+            currentTable.Columns.Add("PageType");
+
+            int stt = (pageIndex - 1) * pageSize + 1;
+
+            foreach (DataRow r in dt.Rows)
+            {
+                string pageId = r["PageID"]?.ToString();
+
+                var info = PageInfoCacheService.Get(pageId);
+
+                if (info != null)
+                {
+                  currentTable.Rows.Add(
+                        false,
+                        stt++,
+                        pageId,
+                        info.PageName,
+                        info.PageLink,
+
+                        r["Status"]?.ToString(),
+                        Convert.ToInt32(r["IsAuto"]) == 1 ? "Bật" : "Tắt",
+                        r["TotalPostsScanned"],
+
+                        r["FirstScanTime"] == DBNull.Value ? "" : r["FirstScanTime"],
+                        r["LastScanTime"] == DBNull.Value ? "" : r["LastScanTime"],
+
+                        // 🔥 thêm dòng này
+                        info.TimeLastPost.HasValue
+                            ? (object)info.TimeLastPost.Value
+                            : DBNull.Value,
+
+                        // dashboard
+                        info.IDFBPage,
+                        info.PageMembers,
+                        info.PageInteraction,
+                        info.PageEvaluation,
+                        info.PageInfoText,
+                        info.PageType
+                    );
+                }
+            }
+
+            gridView1.Columns.Clear();
+            gridControl1.DataSource = currentTable;
+
+            if (!gridView1.Columns.Contains(gridView1.Columns.ColumnByFieldName("Select")))
+            {
+                var col = gridView1.Columns.AddVisible("Select", "Chọn");
+                col.UnboundType = DevExpress.Data.UnboundColumnType.Boolean;
+                col.OptionsColumn.AllowEdit = true;
+                col.Width = 50;
+            }
+
+            gridView1.Columns["PageID"].Visible = false;
+
+            gridView1.BestFitColumns();
+
+            if (currentTable.Rows.Count > 0)
+                ShowPageDashboard(currentTable.Rows[0]);
+
+            pager.Update(totalRows);
+        }
+        //2. Load theo trang của đã quét và chưa quét
+        private void LoadPagePagingByIscan(int pageIndex, int pageSize)
+        {
+            int totalRows = 0;
+            DataTable dt = null;
+
+            if (currentViewType == "PageAdded" || currentViewType == "PageCrawl")
+            {
+                // 🔥 dùng hàm cũ (có isScan)
+                bool isScan = currentViewType == "PageAdded";
+
+                dt = SQLDAO.Instance.GetPageInfoPage_ByType(
+                    pageIndex,
+                    pageSize,
+                    isScan,
+                    out totalRows
+                );
+            }
+            else
+            {
+                return; // không xử lý ở đây (Post để chỗ khác)
+            }
+            // 👉 UI giữ nguyên
+            LoadPageFromDataTable(dt);
+            pager.Update(totalRows);
+        }
+        //3. loag page info theo trang
+        private void LoadPageInfoPaging(int pageIndex, int pageSize)
+        {
+            int totalRows;
+
+            // 🔥 dùng hàm DB riêng (KHÔNG isScan)
+            var dt = SQLDAO.Instance.GetPageInfoPage(
+                pageIndex,
+                pageSize,
+                out totalRows
+            );
+
+            object timeLastPostValue = DBNull.Value;
+
+            currentTable = new DataTable();
+            currentTable.Columns.Add("Select", typeof(bool));
+            currentTable.Columns.Add("STT");
+            currentTable.Columns.Add("PageID");
+            currentTable.Columns.Add("Tên Page");
+            currentTable.Columns.Add("Địa chỉ");
+            currentTable.Columns.Add("Thông tin");
+            currentTable.Columns.Add("Thời gian lưu");
+            currentTable.Columns.Add("TimeLastPost", typeof(DateTime));
+
+            // dashboard
+            currentTable.Columns.Add("IDFBPage");
+            currentTable.Columns.Add("PageMembers");
+            currentTable.Columns.Add("PageInteraction");
+            currentTable.Columns.Add("PageEvaluation");
+            currentTable.Columns.Add("PageInfoText");
+            currentTable.Columns.Add("PageType");
+
+            int stt = (pageIndex - 1) * pageSize + 1;
+
+            foreach (DataRow r in dt.Rows)
+            {
+                var rawTime = r["TimeLastPost"];
+
+                if (rawTime != DBNull.Value)
+                {
+                    if (rawTime is string s && s.Trim().Equals("N/A", StringComparison.OrdinalIgnoreCase))
+                        timeLastPostValue = DBNull.Value;
+                    else if (rawTime is DateTime date)
+                        timeLastPostValue = date;
+                    else if (DateTime.TryParse(rawTime.ToString(), out DateTime parsed))
+                        timeLastPostValue = parsed;
+                    else
+                        timeLastPostValue = DBNull.Value;
+                }
+                else
+                {
+                    timeLastPostValue = DBNull.Value;
+                }
+
+                currentTable.Rows.Add(
+                    false,
+                    stt++,
+                    Safe(r, "PageID"),
+                    Safe(r, "PageName"),
+                    Safe(r, "PageLink"),
+                    Convert.ToInt32(Safe(r, "IsScanned")) == 1 ? "Đã quét" : "Chưa quét",
+                    Safe(r, "PageTimeSave"),
+                    timeLastPostValue,
+
+                    Safe(r, "IDFBPage"),
+                    Safe(r, "PageMembers"),
+                    Safe(r, "PageInteraction"),
+                    Safe(r, "PageEvaluation"),
+                    Safe(r, "PageInfoText"),
+                    Safe(r, "PageType")
+                );
+            }
+
+            // 👉 UI giữ nguyên
+            gridView1.Columns.Clear();
+            gridControl1.DataSource = currentTable;
+
+            if (!gridView1.Columns.Contains(gridView1.Columns.ColumnByFieldName("Select")))
+            {
+                var col = gridView1.Columns.AddVisible("Select", "Chọn");
+                col.UnboundType = DevExpress.Data.UnboundColumnType.Boolean;
+                col.OptionsColumn.AllowEdit = true;
+                col.Width = 50;
+            }
+
+            gridView1.Columns["PageID"].Visible = false;
+            gridView1.Columns["PageMembers"].Visible = false;
+            gridView1.Columns["PageInteraction"].Visible = false;
+            gridView1.Columns["PageEvaluation"].Visible = false;
+            gridView1.Columns["PageInfoText"].Visible = false;
+            gridView1.Columns["Thời gian lưu"].Visible = false;
+
+            gridView1.BestFitColumns();
+
+            if (currentTable.Rows.Count > 0)
+                ShowPageDashboard(currentTable.Rows[0]);
+
+            // 🔥 paging
+            pager.Update(totalRows);
+        }
+
+        private void LoadPageFromDataTable(DataTable dt)
+        {
+            var list = new List<PageInfo>();
+
+            foreach (DataRow r in dt.Rows)
+            {
+                list.Add(new PageInfo
+                {
+                    PageID = r["PageID"] == DBNull.Value ? null : r["PageID"].ToString(),
+                    PageName = r["PageName"] == DBNull.Value ? null : r["PageName"].ToString(),
+                    PageLink = r["PageLink"] == DBNull.Value ? null : r["PageLink"].ToString(),
+                    IDFBPage = r["IDFBPage"] == DBNull.Value ? null : r["IDFBPage"].ToString(),
+                    PageMembers = r["PageMembers"] == DBNull.Value ? null : r["PageMembers"].ToString(),
+                    PageInteraction = r["PageInteraction"] == DBNull.Value ? null : r["PageInteraction"].ToString(),
+                    PageEvaluation = r["PageEvaluation"] == DBNull.Value ? null : r["PageEvaluation"].ToString(),
+                    PageInfoText = r["PageInfoText"] == DBNull.Value ? null : r["PageInfoText"].ToString(),
+
+                    PageType = r["PageType"] == DBNull.Value
+                        ? FBType.Unknown
+                        : Enum.TryParse<FBType>(r["PageType"].ToString(), true, out var t)
+                            ? t
+                            : FBType.Unknown,
+
+                    PageTimeSave = r["PageTimeSave"] == DBNull.Value ? null : r["PageTimeSave"].ToString(),
+
+                    IsScanned = r.Table.Columns.Contains("IsScanned") &&
+                                r["IsScanned"] != DBNull.Value &&
+                                Convert.ToInt32(r["IsScanned"]) == 1,
+
+                    TimeLastPost = r["TimeLastPost"] == DBNull.Value
+                        ? (DateTime?)null
+                        : Convert.ToDateTime(r["TimeLastPost"])
+                });
+            }
+
+            LoadPageBase(list);
+        }
+        private void BindPostGrid(DataTable dt)
+        {
+            panelPostContainer.Visible = true;
+
+            gridPost.DataSource = dt;
+
+            gvPost.PopulateColumns();
+            gvPost.OptionsView.ColumnAutoWidth = false;
+            // ===== FONT =====
+            gvPost.Appearance.Row.Font = new Font("Segoe UI", 9);
+            gvPost.RowHeight = 22;
+
+            // ===== WIDTH =====
+            SetColWidth("STT", 50);
+            SetColWidth("Địa chỉ", 80);
+            SetColWidth("Thời gian", 140);
+            SetColWidth("Like", 40);
+            SetColWidth("Share", 40);
+            SetColWidth("Comment", 40);
+
+            // 🔥 Nội dung chiếm hết phần còn lại
+            if (gvPost.Columns["Nội dung"] != null)
+            {
+                gvPost.Columns["Nội dung"].Width = 400;
+                gvPost.Columns["Nội dung"].OptionsColumn.AllowSize = true;
+            }
+
+            // ===== ALIGN =====
+            Center("STT");
+            Center("Like");
+            Center("Share");
+            Center("Comment");
+            Center("Thời gian");
+
+            // ===== WRAP TEXT =====
+            var col = gvPost.Columns.ColumnByFieldName("Nội dung");
+            if (col != null)
+            {
+                col.AppearanceCell.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
+                gvPost.OptionsView.RowAutoHeight = true;
+            }
+
+            // ===== HELPER =====
+            void SetColWidth(string name, int w)
+            {
+                var column = gvPost.Columns.ColumnByFieldName(name); // 🔥 đổi tên
+                if (column != null)
+                {
+                    column.Width = w;
+                    column.OptionsColumn.FixedWidth = true;
+                }
+            }
+
+            void Center(string name)
+            {
+                var column = gvPost.Columns.ColumnByFieldName(name); // 🔥 đổi tên
+                if (column != null)
+                {
+                    column.AppearanceCell.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+                }
+            }
+            gvPost.OptionsBehavior.Editable = false;
+            gvPost.OptionsSelection.EnableAppearanceFocusedCell = false;
+
+         
+
+            var col2 = gvPost.Columns.ColumnByFieldName("LinkThật");
+            if (col2 != null)
+                col2.Visible = false;
+          
+        }
         public void LoadSource(string type)
         {
             currentViewType = type;
-            // ===== SET TỶ LỆ PANEL =====
-            if (type == "PostPageNote" || type == "PostPageMonitor")
+
+            // giữ nguyên layout
+            if (type == "PostPageNote"|| type == "PostPageMonitor" || type == "PostAllPage") // 🔥 thêm dòng này
             {
-                // 50/50
                 panelControlGrid.Width = (int)(this.Width * 0.50);
                 panelControlDetail.Width = (int)(this.Width * 0.50);
             }
             else
             {
-                // Tỷ lệ mặc định 60/40
                 panelControlGrid.Width = (int)(this.Width * 0.60);
                 panelControlDetail.Width = (int)(this.Width * 0.40);
             }
 
-            switch (type)
-            {
-                case "PageInfo": LoadPageInfo(); break;
-                case "PageNote": LoadPageNote(); break;
-                case "PageMonitor": LoadPageMonitor(); break;
-                case "PostPageNote": LoadPostPageNote(); break;
-                default:
-                    MessageBox.Show($"LoadSource type '{type}' chưa được hỗ trợ!");
-                    break;
-            }
+            // 👉 load trang 1
+            LoadPage(1, pager.PageSize);
         }
+        private void LoadPageBase(List<PageInfo> pages)
+        {
+            currentTable = new DataTable();
 
+            currentTable.Columns.Add("Select", typeof(bool));
+            currentTable.Columns.Add("STT");
+            currentTable.Columns.Add("PageID");
+            currentTable.Columns.Add("Tên Page");
+            currentTable.Columns.Add("Địa chỉ");
+            currentTable.Columns.Add("Thông tin");
+            currentTable.Columns.Add("Thời gian lưu");
+            currentTable.Columns.Add("TimeLastPost", typeof(DateTime));
+
+            currentTable.Columns.Add("IDFBPage");
+            currentTable.Columns.Add("PageMembers");
+            currentTable.Columns.Add("PageInteraction");
+            currentTable.Columns.Add("PageEvaluation");
+            currentTable.Columns.Add("PageInfoText");
+            currentTable.Columns.Add("PageType");
+
+            int stt = 1;
+
+            foreach (var p in pages)
+            {
+                currentTable.Rows.Add(
+                    false,
+                    stt++,
+                    p.PageID,
+                    p.PageName,
+                    p.PageLink,
+                    p.IsScanned ? "Đã quét" : "Chưa quét",
+                    p.PageTimeSave,
+                    p.TimeLastPost ?? (object)DBNull.Value,
+                    p.IDFBPage,
+                    p.PageMembers,
+                    p.PageInteraction,
+                    p.PageEvaluation,
+                    p.PageInfoText,
+                    p.PageType
+                );
+            }
+
+            // ✅ FIX
+            gridView1.Columns.Clear();
+            gridControl1.DataSource = currentTable;
+            gridView1.BestFitColumns();
+        }
         // ==================== PAGE INFO ======================     
         private void LoadPageInfo()
         {
@@ -427,6 +1124,100 @@ namespace CrawlFB_PW._1._0.UC
             if (currentTable.Rows.Count > 0)
                 ShowPageDashboard(currentTable.Rows[0]);
         }
+        //phần post
+        private void LoadPostAllPagePaging(int pageIndex, int pageSize)
+        {
+            int totalRows;
+
+            var dt = SQLDAO.Instance.GetPageInfoPage(pageIndex, pageSize, out totalRows);
+
+            BuildPostTable(dt, pageIndex, pageSize, totalRows);
+        }
+        private void LoadPostPageNotePaging(int pageIndex, int pageSize)
+        {
+            int totalRows;
+
+            var dt = SQLDAO.Instance.GetPageNotePaging(pageIndex, pageSize, out totalRows);
+
+            BuildPostTable(dt, pageIndex, pageSize, totalRows);
+        }
+        private void LoadPostPageMonitorPaging(int pageIndex, int pageSize)
+        {
+            int totalRows;
+
+            var dt = SQLDAO.Instance.GetPageMonitorPaging(pageIndex, pageSize, out totalRows);
+
+            BuildPostTable(dt, pageIndex, pageSize, totalRows);
+        }
+        private void BuildPostTable(DataTable dt, int pageIndex, int pageSize, int totalRows)
+        {
+            currentTable = new DataTable();
+            currentTable.Columns.Add("Select", typeof(bool));
+            currentTable.Columns.Add("STT");
+            currentTable.Columns.Add("PageID");
+            currentTable.Columns.Add("Tên Page");
+            currentTable.Columns.Add("Tổng bài viết");
+            currentTable.Columns.Add("Lần quét gần nhất");
+
+            int stt = (pageIndex - 1) * pageSize + 1;
+
+            // 🔥 lấy list PageID
+            var pageIds = dt.AsEnumerable()
+                .Select(r => r["PageID"].ToString())
+                .ToList();
+
+            // 🔥 batch 1 query
+            var postStats = SQLDAO.Instance.GetPostStatsBatch(pageIds);
+
+            foreach (DataRow r in dt.Rows)
+            {
+                string pageId = r["PageID"].ToString();
+
+                var info = PageInfoCacheService.Get(pageId);
+
+                int totalPost = 0;
+                DateTime? lastPost = null;
+
+                if (postStats.ContainsKey(pageId))
+                {
+                    totalPost = postStats[pageId].TotalPost;
+                    lastPost = postStats[pageId].LastPostTime;
+                }
+
+                string timeText = TimeHelper.NormalizeTime(lastPost);
+
+                if (info != null)
+                {
+                    currentTable.Rows.Add(
+                        false,
+                        stt++,
+                        pageId,
+                        info.PageName,
+                        totalPost,
+                        timeText
+                    );
+                }
+            }
+
+            // UI
+            gridView1.Columns.Clear();
+            gridControl1.DataSource = currentTable;
+
+            if (!gridView1.Columns.Contains(gridView1.Columns.ColumnByFieldName("Select")))
+            {
+                var col = gridView1.Columns.AddVisible("Select", "Chọn");
+                col.UnboundType = DevExpress.Data.UnboundColumnType.Boolean;
+                col.OptionsColumn.AllowEdit = true;
+                col.Width = 50;
+            }
+
+            gridView1.BestFitColumns();
+
+            if (currentTable.Rows.Count > 0)
+                ShowPostPageDashbroad(currentTable.Rows[0]);
+
+            pager.Update(totalRows);
+        }
         private void LoadPostPageNote()
         {
             var dt = SQLDAO.Instance.GetAllPageNote();  // SQL version
@@ -472,6 +1263,21 @@ namespace CrawlFB_PW._1._0.UC
            if (currentTable.Rows.Count > 0)
                 ShowPostPageDashbroad(currentTable.Rows[0]);
         }
+        private void ShowPostPageDashbroad(DataRow r)
+        {
+            string pageID = r["PageID"].ToString();
+
+            _currentPostPageId = pageID;
+            _postPageIndex = 1;
+
+            panelControlDetail.Controls.Clear(); // 🔥 FIX
+
+            panelControlDetail.Controls.Add(panelPostContainer);
+            panelPostContainer.Visible = true;
+
+            LoadPostPaging(pageID, _postPageIndex, _postPageSize);
+        }
+        //pageAdd
 
         // ==================== DASHBOARD ======================
         private void GridView1_RowClick(object sender, RowClickEventArgs e)
@@ -488,7 +1294,9 @@ namespace CrawlFB_PW._1._0.UC
                 case "PostPageMonitor":
                     ShowPostPageDashbroad(row);
                     break;
-
+                case "PostAllPage":   
+                    ShowPostPageDashbroad(row);
+                    break;
                 default:
                     ShowPageDashboard(row);
                     break;
@@ -510,86 +1318,15 @@ namespace CrawlFB_PW._1._0.UC
                 case "PostPageMonitor":
                     ShowPostPageDashbroad(row);
                     break;
-
+                case "PostAllPage":  
+                    ShowPostPageDashbroad(row);
+                    break;
                 default:
                     ShowPageDashboard(row);
                     break;
             }
         }
-        private void btnAddPageNote_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
-        {
-            try
-            {
-                var selectedRows = new List<DataRow>();
-
-                // Lấy toàn bộ row Select = true
-                for (int i = 0; i < gridView1.DataRowCount; i++)
-                {
-                    DataRow r = gridView1.GetDataRow(i);
-                    if (r == null) continue;
-
-                    bool selected = r["Select"] != DBNull.Value && (bool)r["Select"];
-                    if (selected)
-                        selectedRows.Add(r);
-                }
-
-                if (selectedRows.Count == 0)
-                {
-                    MessageBox.Show("⚠ Bạn chưa chọn page nào!");
-                    return;
-                }
-
-                int success = 0;
-                int skipped = 0;
-
-                foreach (var row in selectedRows)
-                {
-                    string pageId = row["PageID"]?.ToString();
-                    if (string.IsNullOrEmpty(pageId))
-                    {
-                        skipped++;
-                        continue;
-                    }
-
-                    // Lấy info từ DB
-                    PageInfo info = SQLDAO.Instance.GetPageByID(pageId);
-                    if (info == null)
-                    {
-                        skipped++;
-                        continue;
-                    }
-
-                    // Chặn GroupOff
-                    if (!string.IsNullOrEmpty(info.PageType) &&
-                        info.PageType.Equals("GroupOff", StringComparison.OrdinalIgnoreCase))
-                    {
-                        skipped++;
-                        continue;
-                    }
-
-                    // Check trùng PageNote
-                    if (SQLDAO.Instance.PageNoteExists(pageId))
-                    {
-                        skipped++;
-                        continue;
-                    }
-
-                    // Insert Note
-                    SQLDAO.Instance.InsertPageNote(pageId, DateTime.Now);
-                    success++;
-                }
-
-                MessageBox.Show($"✔ Thêm ghi chú xong!\n" +
-                                $"- Thành công: {success}\n" +
-                                $"- Bỏ qua: {skipped}");
-
-                LoadPageNote();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("❌ Lỗi thêm PageNote: " + ex.Message);
-            }
-        }
+       
         // ==================== BUILD DASHBOARD ======================
         private void ShowPageDashboard(DataRow r)
         {
@@ -737,85 +1474,46 @@ namespace CrawlFB_PW._1._0.UC
             // ADD TO PANEL
             panelControlDetail.Controls.Add(container);
         }
+
         //============SHOW POST
-        private void ShowPostPageDashbroad(DataRow r)
+
+        private void LoadPostPaging(string pageId, int pageIndex, int pageSize)
         {
-            string pageID = r["PageID"].ToString();
-            var posts = SQLDAO.Instance.GetPostsByPage(pageID);
-            panelControlDetail.Controls.Clear();
-            panelControlDetail.Padding = new Padding(5);
-            // ================= FILTER BAR =================
-            FlowLayoutPanel filter = new FlowLayoutPanel()
-            {
-                Dock = DockStyle.Top,
-                Height = 40,
-                FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(0),
-                Margin = new Padding(0)
-            };
-            // ================= GRID =================
-            GridControl grid = new GridControl() { Dock = DockStyle.Fill };
-            GridView gv = new GridView();          // ⭐ QUAN TRỌNG
-            grid.ViewCollection.Add(gv);           // ⭐
-            grid.MainView = gv;
-            gv.GridControl = grid;                 // ⭐
+            int total;
 
-            // Build DataTable
-            DataTable dt = BuildPostTable(posts);
-            grid.DataSource = dt;
-            // Tạo các cột 1 lần
-            gv.PopulateColumns();            
-            UIPostGridHelper.ApplyPostGridStyleUCPageView(gv);
-            UIPostGridHelper.ApplyPostGridColumnWidth(gv);
-            //gv.OptionsBehavior.Editable = false;
-            UIPostGridHelper.ApplyFakeLink(gv, "Địa chỉ", "LinkThật");
-            void AddFilter(string text, int days)
-            {
-                Button btn = new Button()
-                {
-                    Text = text,
-                    Width = 80,
-                    Height = 26,
-                    Margin = new Padding(5)
-                };
+            var dto = SQLDAO.Instance.GetPostsByPagePaging(pageId, pageIndex, pageSize, out total);
 
-                btn.Click += (s, e) =>
-                {
-                    DateTime from = DateTime.Now.AddDays(-days);
+            var dt = BuildPostTable(dto, pageIndex, pageSize);
 
-                    var filtered = (days == 0)
-                        ? posts
-                        : posts.Where(p => DateTime.TryParse(p.PostTime, out DateTime t) && t >= from).ToList();
+            _postPageSize = pageSize;          // 🔥 PHẢI ĐẶT TRƯỚC
 
-                    DataTable dt2 = BuildPostTable(filtered);
-                    grid.DataSource = dt2;
-                    
-                    //gv.PopulateColumns();
-                  //  UIPostGridHelper.ApplyPostGridStyle(gv);
-                    //UIPostGridHelper.ApplyPostGridColumnWidth(gv);
-                   // UIPostGridHelper.ApplyHyperlinkBehavior(gv);
-                    //ApplyGridWidths(gv);
-                };
+            BindPostGrid(dt);
+            UpdatePostPagingUI(total);
+            Console.WriteLine($"TOTAL={total}, SIZE={pageSize}");
+        }
+        private void UpdatePostPagingUI(int totalRows)
+        {
+            _postTotalRows = totalRows;
 
-                filter.Controls.Add(btn);
-            }
-            AddFilter("1 Ngày", 1);
-            AddFilter("1 Tuần", 7);
-            AddFilter("1 Tháng", 30);
-            AddFilter("3 Tháng", 90);
-            AddFilter("All", 0);
-            // ADD TO UI
-            panelControlDetail.Controls.Add(grid);
-            panelControlDetail.Controls.Add(filter);
-           // === FIX CHÍNH: ÉP GRID INITIALIZE NGAY ===
-            grid.ForceInitialize();// ép load ngay khi click lần đầu
-            // === SAU KHI GRID READY → APPLY HELPER ===
-            UIPostGridHelper.ApplyPostGridStyleUCPageView(gv);
-            UIPostGridHelper.ApplyPostGridColumnWidth(gv);
-            UIPostGridHelper.ApplyFakeLink(gv, "Địa chỉ", "LinkThật");
-        }    
-        // chuyển post sang Table để hiện thị bằng BuidPostTable
-        private DataTable BuildPostTable(List<PostPage> posts)
+            int totalPages = Math.Max(1,
+                (int)Math.Ceiling((double)_postTotalRows / _postPageSize));
+
+            if (_postPageIndex > totalPages)
+                _postPageIndex = totalPages;
+
+            lblPostPage.Text = $"Trang {_postPageIndex} / {totalPages}";
+
+            // 🔥 sync textbox
+            if (txtPageJump != null)
+                txtPageJump.Text = _postPageIndex.ToString();
+
+            btnFirst.Enabled = _postPageIndex > 1;
+            btnPrev.Enabled = _postPageIndex > 1;
+
+            btnNext.Enabled = _postPageIndex < totalPages;
+            btnLast.Enabled = _postPageIndex < totalPages;
+        }
+        private DataTable BuildPostTable(List<PostPage> posts, int pageIndex, int pageSize)
         {
             DataTable dt = new DataTable();
 
@@ -827,22 +1525,20 @@ namespace CrawlFB_PW._1._0.UC
             dt.Columns.Add("Like", typeof(int));
             dt.Columns.Add("Share", typeof(int));
             dt.Columns.Add("Comment", typeof(int));
-
-            int i = 1;
+            int i = 0;
             foreach (var p in posts)
             {
                 dt.Rows.Add(
-                    i++,
+                    (pageIndex - 1) * pageSize + (++i),
                     "Xem link",
                     p.PostLink,
-                    p.PostTime,
+                    p.RealPostTime,
                     p.Content,
                     p.LikeCount ?? 0,
                     p.ShareCount ?? 0,
                     p.CommentCount ?? 0
                 );
             }
-
             return dt;
         }
         // ==================== UI HELPERS ======================
@@ -985,92 +1681,7 @@ namespace CrawlFB_PW._1._0.UC
 
             return $"{days} ngày trước ({dateText})";
         }
-
-        private void btnDeletePage_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
-        {
-            try
-            {
-                var gv = gridView1;
-                if (gv.FocusedRowHandle < 0)
-                {
-                    MessageBox.Show("⚠ Chưa chọn dòng!");
-                    return;
-                }
-
-                DataRow r = gv.GetDataRow(gv.FocusedRowHandle);
-                if (r == null)
-                {
-                    MessageBox.Show("⚠ Không lấy được dữ liệu dòng!");
-                    return;
-                }
-
-                string pageId = r["PageID"]?.ToString();
-                if (string.IsNullOrEmpty(pageId))
-                {
-                    MessageBox.Show("⚠ Không lấy được PageID!");
-                    return;
-                }
-
-                // Confirm
-                var confirm = MessageBox.Show(
-                    "Bạn có chắc muốn xóa?",
-                    "Xác nhận",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning
-                );
-                if (confirm == DialogResult.No) return;
-
-                // ===============================================
-                // XOÁ THEO CHẾ ĐỘ (currentViewType)
-                // ===============================================
-                switch (currentViewType)
-                {
-                    case "PageInfo":
-                        // ❗ XÓA HOÀN TOÀN PAGE
-                        // ⭐ 1. XÓA BÀI VIẾT LIÊN QUAN PAGE TRƯỚC
-                        SQLDAO.Instance.DeleteAllPostsOfPage(pageId);
-
-                        // ⭐ 2. XÓA NOTE
-                        SQLDAO.Instance.DeletePageNote(pageId);
-
-                        // ⭐ 3. XÓA MONITOR
-                        SQLDAO.Instance.DeletePageMonitor(pageId);
-
-                        // ⭐ 4. CUỐI CÙNG MỚI XÓA PAGEINFO
-                        SQLDAO.Instance.ExecuteNonQuery(
-                            "DELETE FROM TablePageInfo WHERE PageID=@id",
-                            new Dictionary<string, object> { { "@id", pageId } }
-                        );
-
-                        MessageBox.Show("✔ Đã xóa toàn bộ dữ liệu Page!");
-
-                        LoadPageInfo();
-                        break;
-
-                    case "PageNote":
-                        // ❗ CHỈ XÓA GHI CHÚ - KHÔNG ĐỤNG PAGEINFO
-                        SQLDAO.Instance.DeletePageNote(pageId);
-                        MessageBox.Show("✔ Đã xóa ghi chú Page!");
-                        LoadPageNote();
-                        break;
-
-                    case "PageMonitor":
-                        // ❗ CHỈ XÓA TRONG TABLE PAGEMONITOR
-                        SQLDAO.Instance.DeletePageMonitor(pageId);
-                        MessageBox.Show("✔ Đã xóa Page khỏi danh sách theo dõi!");
-                        LoadPageMonitor();
-                        break;
-
-                    default:
-                        MessageBox.Show("❗ Chế độ xóa không hợp lệ!");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("❌ Lỗi xóa Page: " + ex.Message);
-            }
-        }
+     
         private void btnSelectAll_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             DataTable dt = gridControl1.DataSource as DataTable;
@@ -1095,8 +1706,7 @@ namespace CrawlFB_PW._1._0.UC
         /// Thu thập link được chọn + chọn profile + chia link theo profile.
         /// Trả về: Dictionary<ProfileDB, List<(PageID, PageLink)>>
         /// </summary>
-        private Dictionary<ProfileDB, List<(string PageID, string PageLink)>>
-            CollectAndDistributePages()
+        private Dictionary<ProfileDB, List<(string PageID, string PageLink)>> CollectAndDistributePages()
         {
             // ===== 1) THU THẬP PAGE ĐƯỢC CHỌN =====
             if (currentTable == null || !currentTable.Columns.Contains("Select"))
@@ -1261,14 +1871,12 @@ namespace CrawlFB_PW._1._0.UC
                     MessageBox.Show("⚠ Bạn chưa chọn profile!");
                     return;
                 }
-
                 var selectedProfiles = frm.Tag as List<ProfileDB>;
                 if (selectedProfiles == null || selectedProfiles.Count == 0)
                 {
                     MessageBox.Show("⚠ Không nhận được profile!");
                     return;
                 }
-
                 // Lọc profile Live (hoặc lấy tất cả đã chọn nếu bạn muốn). Dùng Live như yêu cầu.
                 List<ProfileDB> profiles = selectedProfiles.Where(p => p.ProfileStatus == "Live").ToList();
                 if (profiles.Count == 0)
@@ -1276,18 +1884,15 @@ namespace CrawlFB_PW._1._0.UC
                     MessageBox.Show("⚠ Không có profile LIVE!");
                     return;
                 }
-
                 // --- 3. Phân chia selectedRows cho profiles (round-robin) ---
                 var buckets = new Dictionary<ProfileDB, List<(string PageID, string PageLink, int RowHandle)>>();
                 for (int i = 0; i < profiles.Count; i++) buckets[profiles[i]] = new List<(string, string, int)>();
-
                 int idx = 0;
                 foreach (var item in selectedRows)
                 {
                     buckets[profiles[idx]].Add(item);
                     idx = (idx + 1) % profiles.Count;
                 }
-
                 // --- 4. Tạo task cho mỗi profile (mỗi task mở 1 tab) ---
                 var tasks = new List<Task>();
                 foreach (var kv in buckets)
@@ -1408,7 +2013,6 @@ namespace CrawlFB_PW._1._0.UC
                 MessageBox.Show("❌ Lỗi: " + ex.Message);
             }
         }
-
         private void barButtonItemUpdateNameAndID_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
 
@@ -1481,40 +2085,7 @@ namespace CrawlFB_PW._1._0.UC
             gridControl1.DataSource = filtered;
         }
 
-        private void barButtonItemRemovePageNoteNotScan_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
-        {
-            try
-            {
-                // 1. Xác nhận
-                var confirm = MessageBox.Show(
-                    "Xóa tất cả PageNote của các page chưa chạy (IsScanned = 0)?",
-                    "Xác nhận",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning
-                );
-
-                if (confirm == DialogResult.No) return;
-
-                // 2. Xóa trong SQL
-                SQLDAO.Instance.ExecuteNonQuery(
-                    @"DELETE FROM TablePageNote
-              WHERE PageID IN (
-                  SELECT PageID FROM TablePageInfo WHERE IsScanned = 0
-              )"
-                );
-
-                // 3. Reload PageNote view (nếu đang mở tab PageNote)
-                if (currentViewType == "PageNote")
-                    LoadPageNote();
-
-                MessageBox.Show("✔ Đã xóa PageNote của các page chưa chạy!");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("❌ Lỗi khi xóa PageNote: " + ex.Message);
-            }
-        }
-
+       
         //===============HÀM EXPORT
         private void barButtonItem1_ItemClick_1(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
@@ -1904,7 +2475,6 @@ namespace CrawlFB_PW._1._0.UC
         {
             ApplyPageNameFilter();
         }
-
         private void ApplyPageNameFilter()
         {
             if (currentTable == null)
@@ -1937,7 +2507,6 @@ namespace CrawlFB_PW._1._0.UC
 
             gridControl1.DataSource = filtered;
         }
-
         private void btn_DeleteAllPostPage_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             try
@@ -1999,5 +2568,248 @@ namespace CrawlFB_PW._1._0.UC
                 MessageBox.Show("❌ Lỗi xóa bài viết Page: " + ex.Message);
             }
         }
+
+        private void txb_PageShearch_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+
+        }
+
+        private void btn_AddPagenote2_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                var selectedRows = new List<DataRow>();
+
+                // Lấy toàn bộ row Select = true
+                for (int i = 0; i < gridView1.DataRowCount; i++)
+                {
+                    DataRow r = gridView1.GetDataRow(i);
+                    if (r == null) continue;
+
+                    bool selected = r["Select"] != DBNull.Value && (bool)r["Select"];
+                    if (selected)
+                        selectedRows.Add(r);
+                }
+
+                if (selectedRows.Count == 0)
+                {
+                    MessageBox.Show("⚠ Bạn chưa chọn page nào!");
+                    return;
+                }
+
+                int success = 0;
+                int skipped = 0;
+
+                foreach (var row in selectedRows)
+                {
+                    string pageId = row["PageID"]?.ToString();
+                    if (string.IsNullOrEmpty(pageId))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    // Lấy info từ DB
+                    PageInfo info = SQLDAO.Instance.GetPageByID(pageId);
+                    if (info == null)
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    // Chặn GroupOff
+                    if (info.PageType == FBType.GroupOff)
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    // Check trùng PageNote
+                    if (SQLDAO.Instance.PageNoteExists(pageId))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    // Insert Note
+                    SQLDAO.Instance.InsertPageNote(pageId, DateTime.Now);
+                    success++;
+                }
+
+                MessageBox.Show($"✔ Thêm ghi chú xong!\n" +
+                                $"- Thành công: {success}\n" +
+                                $"- Bỏ qua: {skipped}");
+
+                LoadPageNote();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ Lỗi thêm PageNote: " + ex.Message);
+            }
+        }
+
+        private void btn_AddPage_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            FAddPagecs f = new FAddPagecs();
+            f.ShowDialog();
+        }
+
+        private void btn_AddPageNote_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                var selectedRows = new List<DataRow>();
+
+                // Lấy toàn bộ row Select = true
+                for (int i = 0; i < gridView1.DataRowCount; i++)
+                {
+                    DataRow r = gridView1.GetDataRow(i);
+                    if (r == null) continue;
+
+                    bool selected = r["Select"] != DBNull.Value && (bool)r["Select"];
+                    if (selected)
+                        selectedRows.Add(r);
+                }
+
+                if (selectedRows.Count == 0)
+                {
+                    MessageBox.Show("⚠ Bạn chưa chọn page nào!");
+                    return;
+                }
+
+                int success = 0;
+                int skipped = 0;
+
+                foreach (var row in selectedRows)
+                {
+                    string pageId = row["PageID"]?.ToString();
+                    if (string.IsNullOrEmpty(pageId))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    // Lấy info từ DB
+                    PageInfo info = SQLDAO.Instance.GetPageByID(pageId);
+                    if (info == null)
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    // Chặn GroupOff
+                    if (info.PageType == FBType.GroupOff)
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    // Check trùng PageNote
+                    if (SQLDAO.Instance.PageNoteExists(pageId))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    // Insert Note
+                    SQLDAO.Instance.InsertPageNote(pageId, DateTime.Now);
+                    success++;
+                }
+
+                MessageBox.Show($"✔ Thêm ghi chú xong!\n" +
+                                $"- Thành công: {success}\n" +
+                                $"- Bỏ qua: {skipped}");
+
+                LoadPageNote();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ Lỗi thêm PageNote: " + ex.Message);
+            }
+        }
+
+        private void btn_DeletePage_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                var gv = gridView1;
+                if (gv.FocusedRowHandle < 0)
+                {
+                    MessageBox.Show("⚠ Chưa chọn dòng!");
+                    return;
+                }
+
+                DataRow r = gv.GetDataRow(gv.FocusedRowHandle);
+                if (r == null)
+                {
+                    MessageBox.Show("⚠ Không lấy được dữ liệu dòng!");
+                    return;
+                }
+
+                string pageId = r["PageID"]?.ToString();
+                if (string.IsNullOrEmpty(pageId))
+                {
+                    MessageBox.Show("⚠ Không lấy được PageID!");
+                    return;
+                }
+
+                // Confirm
+                var confirm = MessageBox.Show(
+                    "Bạn có chắc muốn xóa?",
+                    "Xác nhận",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning
+                );
+                if (confirm == DialogResult.No) return;
+
+                // ===============================================
+                // XOÁ THEO CHẾ ĐỘ (currentViewType)
+                // ===============================================
+                switch (currentViewType)
+                {
+                    case "PageInfo":
+                        // ❗ XÓA HOÀN TOÀN PAGE
+                        // ⭐ 1. XÓA BÀI VIẾT LIÊN QUAN PAGE TRƯỚC
+                        SQLDAO.Instance.DeleteAllPostsOfPage(pageId);
+
+                        // ⭐ 2. XÓA NOTE
+                        SQLDAO.Instance.DeletePageNote(pageId);
+
+                        // ⭐ 3. XÓA MONITOR
+                        SQLDAO.Instance.DeletePageMonitor(pageId);
+
+                        // ⭐ 4. CUỐI CÙNG MỚI XÓA PAGEINFO
+                        SQLDAO.Instance.ExecuteNonQuery(
+                            "DELETE FROM TablePageInfo WHERE PageID=@id",
+                            new Dictionary<string, object> { { "@id", pageId } }
+                        );
+
+                        MessageBox.Show("✔ Đã xóa toàn bộ dữ liệu Page!");
+
+                        LoadPageInfo();
+                        break;
+
+                    case "PageNote":
+                        // ❗ CHỈ XÓA GHI CHÚ - KHÔNG ĐỤNG PAGEINFO
+                        SQLDAO.Instance.DeletePageNote(pageId);
+                        MessageBox.Show("✔ Đã xóa ghi chú Page!");
+                        LoadPageNote();
+                        break;
+
+                    case "PageMonitor":
+                        // ❗ CHỈ XÓA TRONG TABLE PAGEMONITOR
+                        SQLDAO.Instance.DeletePageMonitor(pageId);
+                        MessageBox.Show("✔ Đã xóa Page khỏi danh sách theo dõi!");
+                        LoadPageMonitor();
+                        break;
+
+                    default:
+                        MessageBox.Show("❗ Chế độ xóa không hợp lệ!");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ Lỗi xóa Page: " + ex.Message);
+            }
+        }
+
+       
     }
 }

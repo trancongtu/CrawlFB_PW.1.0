@@ -10,11 +10,11 @@ public class PersonPostVM
     public string TimeView { get; set; }
     public DateTime? RealPostTime { get; set; }
 
-    public string PosterIDFB { get; set; } = "N/A";
+    public string PosterIDFB { get; set; }
     public FBType PosterFBType { get; set; } = FBType.Unknown;
     public string PostLink { get; set; }
     public string PostStatus { get; set; }
-    public string IDFBPost { get; set; } = "N/A";
+    public string IDFBPost { get; set; }
     public string Content { get; set; }
 
     public int Like { get; set; }

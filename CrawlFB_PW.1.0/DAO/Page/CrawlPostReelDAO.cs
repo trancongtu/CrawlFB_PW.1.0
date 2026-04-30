@@ -30,63 +30,61 @@ namespace CrawlFB_PW._1._0.DAO
         }
         // mở link mới lấy thông tin
         //1  lấy tên pagename link page name 
-        public async Task<(string OriginalPageName, string OriginalPageLink)>ExtractPageGroupsReel(IPage page,IElementHandle postNode)
+        public async Task<(string OriginalPageName, string OriginalPageLink)>ExtractPageGroupsReel(IPage page, IElementHandle postNode)
         {
-            string pageName = "N/A";
-            string pageLink = "N/A";
+            string pageName = null;
+            string pageLink = null;
 
             Libary.Instance.LogDebug(" ▶ Start Reel");
+
             try
             {
-                // =================================================
-                // 1️⃣ ƯU TIÊN: a[aria-label='Xem Nhóm']
-                // =================================================
+                // 1️⃣ ƯU TIÊN
                 var aGroup = await postNode.QuerySelectorAsync("a[aria-label='Xem Nhóm'][href]");
                 if (aGroup != null)
                 {
-                    pageName = (await aGroup.InnerTextAsync())?.Trim();
-                    string href = await aGroup.GetAttributeAsync("href");
+                    pageName = Clean(await aGroup.InnerTextAsync());
+                    var href = await aGroup.GetAttributeAsync("href");
 
-                    if (!string.IsNullOrWhiteSpace(href)) pageLink = ProcessingHelper.ShortLinkPage(href);
-                    Libary.Instance.LogDebug( $"[ExtractPageContainerReel] ✅ Found by aria-label | Name='{pageName}', Link='{pageLink}'");
-                    return (pageName ?? "N/A", pageLink ?? "N/A");
-                }
-                Libary.Instance.LogDebug("[ExtractPageContainerReel] aria-label='Xem Nhóm' not found → fallback");
+                    pageLink = Clean(href);
 
-                // =================================================
-                // 2️⃣ FALLBACK: span[class='x1lliihq x6ikm8r x10wlt62 x1n2onr6']
-                // =================================================
-                var span = await postNode.QuerySelectorAsync( "span[class='x1lliihq x6ikm8r x10wlt62 x1n2onr6']");
+                    if (pageLink != null)
+                        pageLink = ProcessingHelper.ShortLinkPage(pageLink);
 
-                if (span == null)
-                {
-                    Libary.Instance.LogDebug("[ExtractPageContainerReel] ❌ Fallback span not found");
                     return (pageName, pageLink);
                 }
-                // Page name
-                pageName = (await span.InnerTextAsync())?.Trim();
 
-                // Page link
+                // 2️⃣ FALLBACK
+                var span = await postNode.QuerySelectorAsync(
+                    "span[class='x1lliihq x6ikm8r x10wlt62 x1n2onr6']");
+
+                if (span == null)
+                    return (null, null);
+
+                pageName = Clean(await span.InnerTextAsync());
+
                 var a = await span.QuerySelectorAsync("a[href]");
                 if (a != null)
                 {
-                    string href = await a.GetAttributeAsync("href");
-                    if (!string.IsNullOrWhiteSpace(href)) pageLink = ProcessingHelper.ShortLinkPage(href);
+                    var href = await a.GetAttributeAsync("href");
+                    pageLink = Clean(href);
+
+                    if (pageLink != null)
+                        pageLink = ProcessingHelper.ShortLinkPage(pageLink);
                 }
-                Libary.Instance.LogDebug( $" ✅ Found by span | Name='{pageName}', Link='{pageLink}'");
             }
             catch (Exception ex)
             {
-                Libary.Instance.LogDebug( $" ❌ Exception: {ex.Message}");
+                Libary.Instance.LogDebug($" ❌ Exception: {ex.Message}");
             }
 
-            return (pageName ?? "N/A", pageLink ?? "N/A");
+            return (pageName, pageLink);
         }
         // 1 lấy postername, posterlink áp dụng groups
-        public async Task<(string PosterName, string PosterLink)> ExtractPosterGroupsReel(IElementHandle postNode)
+        public async Task<(string PosterName, string PosterLink)>ExtractPosterGroupsReel(IElementHandle postNode)
         {
-            string posterName = "N/A";
-            string posterLink = "N/A";
+            string posterName = null;
+            string posterLink = null;
 
             Libary.Instance.LogDebug("[ExtractPosterFromHtmlSpan] ▶ Start");
 
@@ -95,67 +93,45 @@ namespace CrawlFB_PW._1._0.DAO
                 var span = await postNode.QuerySelectorAsync(
                     "span[class='html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x65f84u']");
 
+                // ======================
+                // 1️⃣ FALLBACK nếu không có span
+                // ======================
                 if (span == null)
                 {
-                    if (span == null)
-                    {
-                        Libary.Instance.LogDebug(
-                            "[ExtractPosterFromHtmlSpan] ❌ Span not found → fallback a[aria-label]");
+                    Libary.Instance.LogDebug(
+                        "[ExtractPosterFromHtmlSpan] ❌ Span not found → fallback a[aria-label]");
 
-                        try
-                        {
-                            var aa = await postNode.QuerySelectorAsync(
-                                "a[aria-label='Xem trang cá nhân của chủ sở hữu']");
+                    var aa = await postNode.QuerySelectorAsync(
+                        "a[aria-label='Xem trang cá nhân của chủ sở hữu']");
 
-                            if (aa == null)
-                            {
-                                Libary.Instance.LogDebug(
-                                    "[ExtractPosterFromHtmlSpan] ❌ Fallback <a> not found");
-                                return (posterName, posterLink);
-                            }
+                    if (aa == null)
+                        return (null, null);
 
-                            // ========= NAME =========
-                            posterName = (await aa.InnerTextAsync())?.Trim();
+                    posterName = Clean(await aa.InnerTextAsync());
 
-                            // ========= LINK =========
-                            var rawHref = (await aa.GetAttributeAsync("href"))?.Trim();
-                            posterLink = ProcessingHelper.NormalizeReelPosterProfile(rawHref);
+                    var rawHref = await aa.GetAttributeAsync("href");
+                    posterLink = Clean(rawHref);
 
-                            Libary.Instance.LogTech(
-                                $"[ExtractPosterFromHtmlSpan] ✅ Fallback OK | Name='{posterName}' | Link={posterLink}");
+                    if (posterLink != null)
+                        posterLink = ProcessingHelper.NormalizeReelPosterProfile(posterLink);
 
-                            return (posterName, posterLink);
-                        }
-                        catch (Exception ex)
-                        {
-                            Libary.Instance.LogDebug(
-                                $"[ExtractPosterFromHtmlSpan] ❌ Fallback exception: {ex.Message}");
-                            return (posterName, posterLink);
-                        }
-                    }
-
+                    return (posterName, posterLink);
                 }
 
-                // ========================
-                // POSTER NAME
-                // ========================
-                posterName = (await span.InnerTextAsync())?.Trim();
+                // ======================
+                // 2️⃣ NORMAL FLOW
+                // ======================
+                posterName = Clean(await span.InnerTextAsync());
 
-                // ========================
-                // POSTER LINK
-                // ========================
                 var a = await span.QuerySelectorAsync("a[href]");
                 if (a != null)
                 {
-                    string href = await a.GetAttributeAsync("href");
-                    if (!string.IsNullOrWhiteSpace(href))
-                    {
-                        posterLink = ProcessingHelper.ShortenPosterLink(href);
-                    }
-                }
+                    var href = await a.GetAttributeAsync("href");
+                    posterLink = Clean(href);
 
-                Libary.Instance.LogDebug(
-                    $"[ExtractPosterFromHtmlSpan] ✅ Name='{posterName}', Link='{posterLink}'");
+                    if (posterLink != null)
+                        posterLink = ProcessingHelper.ShortenPosterLink(posterLink);
+                }
             }
             catch (Exception ex)
             {
@@ -163,18 +139,22 @@ namespace CrawlFB_PW._1._0.DAO
                     $"[ExtractPosterFromHtmlSpan] ❌ Exception: {ex.Message}");
             }
 
-            return (posterName ?? "N/A", posterLink ?? "N/A");
+            return (posterName, posterLink);
         }
         //HÀM MỞ LINK ĐỂ LẤY CONTENT VÀ TƯƠNG TÁC
-        public async Task<(string Content,int Like,int Comment, int Share)> OpenReelTabAndExtractAsync( IPage mainPage,string reelLink)
+        public async Task<(string Content, int Like, int Comment, int Share)>OpenReelTabAndExtractAsync(IPage mainPage, string reelLink)
         {
-            string content = "N/A";    int like = 0, comment = 0, share = 0;
+            string content = null;   // 🔥 chỉ đổi N/A → null
+            int like = 0, comment = 0, share = 0;
+
             Libary.Instance.LogDebug($"{Libary.IconInfo} 🌐 [ReelTab] Open reel tab: {reelLink}");
+
             IPage newPage = null;
+
             try
             {
                 // ========================
-                // 1️⃣ OPEN TAB
+                // 1️⃣ OPEN TAB (GIỮ NGUYÊN)
                 // ========================
                 var popupTask = mainPage.Context.WaitForPageAsync();
                 await mainPage.EvaluateAsync($"window.open('{reelLink}', '_blank');");
@@ -182,24 +162,30 @@ namespace CrawlFB_PW._1._0.DAO
                 var finished = await Task.WhenAny(popupTask, Task.Delay(6000));
                 if (finished != popupTask)
                 {
-                    Libary.Instance.LogDebug( $"{Libary.IconFail} ❌ [ReelTab] Timeout mở tab reel");
-                    return (content, like, comment, share);
+                    Libary.Instance.LogDebug($"{Libary.IconFail} ❌ [ReelTab] Timeout mở tab reel");
+                    return (content, like, comment, share); // 🔥 null thay vì N/A
                 }
+
                 newPage = await popupTask;
                 await newPage.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
                 await newPage.WaitForTimeoutAsync(500);
+
                 // ========================
-                // 2️⃣ GET CONTENT
+                // 2️⃣ GET CONTENT (GIỮ NGUYÊN FLOW)
                 // ========================
                 Libary.Instance.LogDebug($"{Libary.IconInfo} ✍️ [ReelTab] Lấy caption reel");
-                content = await GetReelTextAsync( newPage,await newPage.QuerySelectorAsync("body"));
+
+                var body = await newPage.QuerySelectorAsync("body");
+
+                // 🔥 chỉ thêm Clean, không đổi thuật toán
+                content = Clean(await GetReelTextAsync(newPage, body));
+
                 // ========================
-                // 3 GET INTERACTIONS
+                // 3️⃣ GET INTERACTIONS (GIỮ NGUYÊN)
                 // ========================
                 Libary.Instance.LogDebug($"{Libary.IconInfo} 📊 [ReelTab] Lấy tương tác reel");
-                (like, comment, share) = await ExtractReelInteractionsAsync(newPage);
-               
 
+                (like, comment, share) = await ExtractReelInteractionsAsync(newPage);
             }
             catch (Exception ex)
             {
@@ -209,29 +195,26 @@ namespace CrawlFB_PW._1._0.DAO
             {
                 if (newPage != null)
                 {
-                    try
-                    {
-                        await newPage.CloseAsync();
-                    }
-                    catch { }
+                    try { await newPage.CloseAsync(); } catch { }
                 }
             }
-            return (content ?? "N/A", like, comment, share);
+
+            // 🔥 bỏ "?? N/A"
+            return (content, like, comment, share);
         }
         // HÀM BỔ TRỢ
         public async Task<string> GetReelTextAsync(IPage page, IElementHandle post)
         {
             try
             {
-                // 🎯 Tìm vùng caption của reel
                 var captionDiv = await post.QuerySelectorAsync("div[class = 'xdj266r x14z9mp xat24cr x1lziwak x1vvkbs x126k92a']");
 
                 if (captionDiv == null)
                 {
                     Libary.Instance.LogDebug("⚠️ Không tìm thấy vùng caption reel.");
-                    return "N/A";
+                    return null; // 🔥 FIX
                 }
-                // 🔍 1) Tìm nút 'Xem thêm' trong vùng caption
+
                 var seeMoreBtn = await captionDiv.QuerySelectorAsync(
                     "div[role='button']:has-text(\"Xem thêm\"), div[role='button']:has-text(\"See more\")"
                 );
@@ -242,7 +225,6 @@ namespace CrawlFB_PW._1._0.DAO
 
                     try
                     {
-                        // Scroll vào giữa màn hình để tránh bị che
                         await page.EvaluateAsync("el => el.scrollIntoView({block:'center'})", seeMoreBtn);
                         await page.WaitForTimeoutAsync(150);
 
@@ -260,7 +242,7 @@ namespace CrawlFB_PW._1._0.DAO
                         await page.WaitForTimeoutAsync(200);
                     }
                 }
-                // 🔹 2) Lấy toàn bộ text sau khi mở rộng
+
                 var spans = await captionDiv.QuerySelectorAllAsync(
                     "span[dir='auto'], div[dir='auto']"
                 );
@@ -274,7 +256,6 @@ namespace CrawlFB_PW._1._0.DAO
                         allLines.Add(text);
                 }
 
-                // 🧹 3) LOẠI TRÙNG caption (do FB render collapsed/expanded)
                 allLines = allLines
                     .Select(x => x.Trim())
                     .Where(x => x.Length > 0)
@@ -283,7 +264,6 @@ namespace CrawlFB_PW._1._0.DAO
 
                 string content = string.Join(" ", allLines).Trim();
 
-                // 4) fallback nếu vẫn rỗng
                 if (string.IsNullOrWhiteSpace(content))
                 {
                     var raw = await captionDiv.GetPropertyAsync("textContent");
@@ -293,7 +273,7 @@ namespace CrawlFB_PW._1._0.DAO
                 if (string.IsNullOrWhiteSpace(content))
                 {
                     Libary.Instance.LogDebug($"{Libary.IconFail} ⚠️ Không lấy được caption reel.");
-                    return "N/A";
+                    return null; // 🔥 FIX
                 }
 
                 Libary.Instance.LogDebug($"🎉 [Reel] Caption: {content.Length} ký tự");
@@ -302,7 +282,7 @@ namespace CrawlFB_PW._1._0.DAO
             catch (Exception ex)
             {
                 Libary.Instance.LogDebug("❌ Lỗi GetReelTextAsync: " + ex.Message);
-                return "N/A";
+                return null; // 🔥 FIX
             }
         }
         public async Task<(int like, int comment, int share)> ExtractReelInteractionsAsync(IPage page)
@@ -397,24 +377,26 @@ namespace CrawlFB_PW._1._0.DAO
         public async Task<PostPage> ExtractPostReelAll(IPage mainPage, IElementHandle post)
         {
             Libary.Instance.LogDebug($"{Libary.IconInfo} Start [ExtractPostReelAll");
+
             var reel = new PostPage()
             {
-
-                PostType = PostType.page_Real_Cap.ToString()
+                PostType = PostType.page_Real_Cap
             };
-            // Lấy PageName (Page Chứa nếu có)
+
             var (pagename, pagelink) = await ExtractPageGroupsReel(mainPage, post);
-            if (!string.IsNullOrEmpty(pagename))
+
+            if (!string.IsNullOrWhiteSpace(pagename))
             {
                 reel.PageName = pagename;
                 reel.PageLink = pagelink;
             }
+
             try
             {
                 var posterReel = await post.QuerySelectorAsync("a[class*='x1i10hfl xjbqb8w x1ejq31n x18oe1m7 x1sy0etr xstzfhl x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xt0psk2 x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x1heor9g xkrqix3 x1sur9pj x1s688f']");
+
                 if (posterReel != null)
                 {
-                    // Lấy link người đăng
                     string rawHref = await posterReel.GetAttributeAsync("href");
                     if (!string.IsNullOrWhiteSpace(rawHref))
                     {
@@ -432,22 +414,25 @@ namespace CrawlFB_PW._1._0.DAO
                             reel.PosterLink = ProcessingHelper.ShortenPosterLinkReel(posterlink);
                         }
                     }
-
                 }
-                if (!string.IsNullOrWhiteSpace(reel.PosterLink) && reel.PosterLink != "N/A")
+
+                if (!string.IsNullOrWhiteSpace(reel.PosterLink))
                     Libary.Instance.LogDebug($"{Libary.IconOK} PosterRell OK: {reel.PosterLink}");
             }
             catch (Exception ex)
             {
                 Libary.Instance.LogDebug($"{Libary.IconFail} PosterRell k lấy được link: {ex.Message}");
             }
+
             try
             {
                 var aTags = await post.QuerySelectorAllAsync("a[href]");
-                string reelLink = "N/A";
-                string posterLink = "N/A";
-                string postTime = "N/A";
-                string posterName = "N/A";
+
+                string reelLink = null;
+                string posterLink = null;
+                string postTime = null;
+                string posterName = null;
+
                 foreach (var a in aTags)
                 {
                     string href = await a.GetAttributeAsync("href") ?? "";
@@ -455,73 +440,75 @@ namespace CrawlFB_PW._1._0.DAO
 
                     if (string.IsNullOrEmpty(href))
                         continue;
-                    // 2) Tìm reel
-                    if (href.Contains("/reel/") && reelLink == "N/A")
+
+                    if (href.Contains("/reel/") && string.IsNullOrWhiteSpace(reelLink))
                     {
                         reelLink = ProcessingHelper.ShortenFacebookPostLink(href);
                         Libary.Instance.LogDebug($"{Libary.IconOK} 🎞️ Found ReelLink = {reelLink}");
                     }
+
                     reel.PostLink = ProcessingHelper.NormalizeReelLink(reelLink);
                 }
-                IElementHandle TimeTag = await post.QuerySelectorAsync("span[class= 'html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x4k7w5x x1h91t0o x1h9r5lt x1jfb8zj xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j']");
+
+                var TimeTag = await post.QuerySelectorAsync("span[class= 'html-span xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1hl2dhg x16tdsg8 x1vvkbs x4k7w5x x1h91t0o x1h9r5lt x1jfb8zj xv2umb2 x1beo9mf xaigb6o x12ejxvf x3igimt xarpa2k xedcshv x1lytzrv x1t2pt76 x7ja8zs x1qrby5j']");
+
                 if (TimeTag != null)
                 {
                     string time = (await TimeTag.InnerTextAsync() ?? "").Trim();
                     if (ProcessingDAO.Instance.IsTime(time))
                     {
                         postTime = TimeHelper.CleanTimeString(time);
-                        Libary.Instance.LogDebug($"{Libary.IconOK} 🕒 Found PostTime reel: {postTime}");
                         reel.PostTime = postTime;
-                        reel.RealPostTime = TimeHelper.ParseFacebookTime(reel.PostTime);
+                        reel.RealPostTime = TimeHelper.ParseFacebookTime(postTime);
                     }
                 }
-                if (reelLink == "N/A")
+
+                // 🔥 FIX: N/A → null
+                if (string.IsNullOrWhiteSpace(reelLink))
                 {
-                    Libary.Instance.LogDebug($"{Libary.IconFail}❌ [ReelExtract] Không có /reel/ để mở tab → return basic info");
+                    Libary.Instance.LogDebug($"{Libary.IconFail}❌ [ReelExtract] Không có /reel/");
                     return reel;
                 }
-                if (posterLink != "N/A") reel.PosterLink = ProcessingDAO.Instance.ShortenPosterLinkReel(posterLink);
-                if (reel.PosterLink != "N/A")
+
+                if (!string.IsNullOrWhiteSpace(posterLink))
+                    reel.PosterLink = ProcessingDAO.Instance.ShortenPosterLinkReel(posterLink);
+
+                if (!string.IsNullOrWhiteSpace(reel.PosterLink))
                 {
-                    Libary.Instance.LogDebug($"{Libary.IconInfo} dùng CheckType lấy type người đăng Reel");
-                    var fbTypeReel = await CrawlBaseDAO.Instance.CheckTypeCachedAsync(mainPage, reel.PosterLink);
-                    reel.PosterNote = fbTypeReel.ToString();
+                    var (type, idfb) = await CrawlBaseDAO.Instance.CheckTypeCachedAsync(mainPage, reel.PosterLink);
+                    reel.PosterNote = type;
+                    reel.PosterIdFB = idfb;
                 }
-                // ============================================
-                // 4️⃣ MỞ TAB BÀI REEL → LẤY CONTENT + TƯƠNG TÁC
-                // ============================================
-                Libary.Instance.LogDebug($"{Libary.IconInfo} 🌐 [ReelExtract] Mở tab mới để lấy nội dung reel…");
+
+                // OPEN TAB (GIỮ NGUYÊN)
                 var popupTask = mainPage.Context.WaitForPageAsync();
                 await mainPage.EvaluateAsync($"window.open('{reelLink}', '_blank');");
+
                 var finished = await Task.WhenAny(popupTask, Task.Delay(6000));
                 if (finished != popupTask)
                 {
-                    Libary.Instance.LogDebug($"{Libary.IconFail} ❌ [ReelExtract] Timeout mở tab reel");
                     return reel;
                 }
+
                 var newPage = await popupTask;
                 await newPage.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
                 await newPage.WaitForTimeoutAsync(500);
 
-                // ========== LẤY CONTENT REEL ==========
-                Libary.Instance.LogDebug($"{Libary.IconInfo} ✍️ [ReelExtract] Lấy caption reel…");
                 reel.Content = await GetReelTextAsync(newPage, await newPage.QuerySelectorAsync("body"));
+
                 var Divpostername = await newPage.QuerySelectorAsync("span[class='xjp7ctv']>a");
                 if (Divpostername != null)
                 {
                     posterName = (await Divpostername.InnerTextAsync()).Trim();
                 }
-                else
-                {
-                    Libary.Instance.LogDebug($"{Libary.IconFail} Không lấy được PosterName");
-                }
-                // ========== LẤY TƯƠNG TÁC ==========
-                Libary.Instance.LogDebug($"{Libary.IconInfo} 📊 [ReelExtract] Lấy tương tác reel…");
+
                 var (likes, comments, shares) = await ExtractReelInteractionsAsync(newPage);
+
                 reel.LikeCount = likes;
                 reel.CommentCount = comments;
                 reel.ShareCount = shares;
                 reel.PosterName = posterName;
+
                 await newPage.CloseAsync();
                 return reel;
             }
@@ -530,6 +517,16 @@ namespace CrawlFB_PW._1._0.DAO
                 Libary.Instance.CreateLog($"❌ [ReelExtract] Lỗi: {ex.Message}");
                 return reel;
             }
+        }
+        public static string Clean(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+
+            s = s.Trim();
+
+            return s.Equals("N/A", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : s;
         }
         //=========II. REEL SHARE - MỞ MỚI LẤY TOÀN BỘ TRỪ TIME, LINKPOST
         //-1. lấy feed node
@@ -807,11 +804,13 @@ namespace CrawlFB_PW._1._0.DAO
                 IsGroups =ProcessingHelper.IsValidContent(info.PageLink) && info.PageLink.Contains("/groups/");
                 if (IsGroups && feed != null)
                 {
+                    info.ContainerType = FBType.GroupOn;
                     // BẮT BUỘC lấy ở đây
                     await FillPosterInfoForReelGroupFromFeedAsync(feed, info);
                 }
                 else
                 {
+                    info.ContainerType = FBType.Fanpage;
                     info.PosterName = info.PageName;
                     info.PosterLink = info.PageLink;
                 }
@@ -845,6 +844,7 @@ namespace CrawlFB_PW._1._0.DAO
             }
             if (IsGroups)
             {
+                info.ContainerType = FBType.GroupOn;
                 // =========================
                 // 1️⃣ CHECK CONTAINER (GROUP)
                 // =========================
@@ -870,6 +870,7 @@ namespace CrawlFB_PW._1._0.DAO
             }
             else
             {
+               
                 if (ProcessingHelper.IsValidContent(info.PageLink))
                 {
                     var (type, idfb) =await CrawlBaseDAO.Instance.CheckTypeCachedAsync(mainPage, info.PageLink);
@@ -877,13 +878,15 @@ namespace CrawlFB_PW._1._0.DAO
                     // nếu là PERSON → không có page
                     if (IsPersonType(type))
                     {
-                        info.PageName = "N/A";
-                        info.PageLink = "N/A";
+                        info.PageName = null;     // 🔥 FIX
+                        info.PageLink = null;     // 🔥 FIX
                         info.PosterNote = type;
                         info.PosterIdFB = idfb;
+                        info.ContainerType = type;
                     }
                     else
                     {
+                        info.ContainerType = FBType.Fanpage;
                         // container == poster
                         info.PosterNote = info.ContainerType = type;
                         info.PosterIdFB = idfb = info.ContainerIdFB = idfb;
@@ -896,4 +899,5 @@ namespace CrawlFB_PW._1._0.DAO
     t == FBType.PersonKOL ||
     t == FBType.PersonHidden;
     }
+
 }

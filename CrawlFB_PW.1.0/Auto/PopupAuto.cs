@@ -8,17 +8,14 @@ namespace CrawlFB_PW._1._0.Page
     {
         public static PopupAuto Instance;
 
-        private Label lblPage;
-        private Label lblTotalPages;
-        private Label lblCompleted;
-        private Label lblPosts;
-        private Label lblCountdown;
+        private Label lblTotal;
+        private Label lblTab;
+        private Label lblNew;
+        private Label lblSaved;
 
         private ProgressBar progressBar;
-
-        private Timer countdownTimer;
-        private int remainingSeconds = 0;
         private NotifyIcon trayIcon;
+
         public PopupAuto()
         {
             InitializeComponent();
@@ -30,166 +27,166 @@ namespace CrawlFB_PW._1._0.Page
         private void BuildUI()
         {
             this.FormBorderStyle = FormBorderStyle.None;
-            this.Size = new Size(360, 260);
-            this.StartPosition = FormStartPosition.Manual;
+            this.Size = new Size(320, 220);
+            this.StartPosition = FormStartPosition.CenterScreen;
             this.TopMost = true;
-            this.BackColor = Color.White;
+            this.BackColor = Color.FromArgb(245, 247, 250);
             this.ShowInTaskbar = false;
-
-            // Shadow effect
-            this.Padding = new Padding(1);
-            this.BackColor = Color.Gray;
 
             var container = new Panel()
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
+                Padding = new Padding(1)
             };
             this.Controls.Add(container);
 
-            // Header gradient
+            // ===== HEADER =====
             var header = new Panel()
             {
-                Height = 50,
+                Height = 40,
                 Dock = DockStyle.Top,
-                BackColor = ColorTranslator.FromHtml("#0078FF")
+                BackColor = Color.FromArgb(0, 120, 255)
             };
             container.Controls.Add(header);
 
             var lblHeader = new Label()
             {
-                Text = "AUTO GIÁM SÁT",
+                Text = "🚀 AUTO MONITOR",
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                AutoSize = false,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleCenter
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Dock = DockStyle.Left,
+                Width = 200,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(10, 0, 0, 0)
             };
             header.Controls.Add(lblHeader);
 
-            lblPage = CreateLabel(container, 65);
-            lblTotalPages = CreateLabel(container, 95);
-            lblCompleted = CreateLabel(container, 125);
-            lblPosts = CreateLabel(container, 155);
-
-            lblCountdown = new Label()
+            // ===== NÚT MINIMIZE (—) =====
+            var btnMin = new Label()
             {
-                Text = "Chạy lại sau: --",
-                ForeColor = ColorTranslator.FromHtml("#FF6600"),
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                AutoSize = true,
-                Location = new Point(20, 190)
+                Text = "—",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                AutoSize = false,
+                Width = 30,
+                Dock = DockStyle.Right,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand
             };
-            container.Controls.Add(lblCountdown);
+            btnMin.Click += (s, e) => HideToTray();
+            header.Controls.Add(btnMin);
+
+            // ===== NÚT CLOSE (X) =====
+            var btnClose = new Label()
+            {
+                Text = "X",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                AutoSize = false,
+                Width = 30,
+                Dock = DockStyle.Right,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand
+            };
+            btnClose.Click += (s, e) => this.Hide(); // ❗ KHÔNG close app
+            header.Controls.Add(btnClose);
+
+            int y = 55;
+
+            lblTotal = CreateCard(container, y, "📄 Tổng page"); y += 35;
+            lblTab = CreateCard(container, y, "🧠 Tab đang chạy"); y += 35;
+            lblNew = CreateCard(container, y, "🆕 Bài mới"); y += 35;
+            lblSaved = CreateCard(container, y, "💾 Đã lưu"); y += 35;
 
             progressBar = new ProgressBar()
             {
-                Width = 300,
-                Height = 12,
-                Location = new Point(20, 220),
-                Style = ProgressBarStyle.Continuous
+                Width = 260,
+                Height = 8,
+                Location = new Point(30, y + 5)
             };
             container.Controls.Add(progressBar);
 
-            countdownTimer = new Timer();
-            countdownTimer.Interval = 1000; // 1s
-            countdownTimer.Tick += CountdownTick;
-            trayIcon = new NotifyIcon();
-            trayIcon.Icon = SystemIcons.Information;
-            trayIcon.Visible = true;
-            trayIcon.Text = "Auto Giám Sát đang chạy";
-
-            trayIcon.DoubleClick += (s, e) =>
-            {
-                this.Show();
-                this.TopMost = true;
-                this.BringToFront();
-            };
-
-            // close form click
-            this.Click += (s, e) => this.Hide();
-            header.Click += (s, e) => this.Hide();
-            lblHeader.Click += (s, e) => this.Hide();
+            InitTray();
+            EnableDrag(header);
         }
-
-        private Label CreateLabel(Control parent, int y)
+        public void UpdateStartCountdown(int seconds)
+        {
+            this.Text = $"⏳ Chạy sau: {seconds}s";
+        }
+        private Label CreateCard(Control parent, int y, string title)
         {
             var lbl = new Label()
             {
+                Text = $"{title}: 0",
                 ForeColor = Color.Black,
                 Font = new Font("Segoe UI", 10),
                 AutoSize = true,
-                Location = new Point(20, y),
-                Text = "--"
+                Location = new Point(30, y)
             };
 
             parent.Controls.Add(lbl);
             return lbl;
         }
 
-        private void CountdownTick(object sender, EventArgs e)
+        // ===== TRAY =====
+        private void InitTray()
         {
-            if (remainingSeconds > 0)
-            {
-                remainingSeconds--;
-                lblCountdown.Text = $"Chạy lại sau: {remainingSeconds}s";
+            trayIcon = new NotifyIcon();
+            trayIcon.Icon = SystemIcons.Application;
+            trayIcon.Visible = true;
+            trayIcon.Text = "Auto Monitor đang chạy";
 
-                progressBar.Value = Math.Max(0, Math.Min(100,
-                    (int)((remainingSeconds * 1.0 / countdownMax) * 100)));
-            }
-            else
+            trayIcon.DoubleClick += (s, e) => ShowFromTray();
+
+            var menu = new ContextMenuStrip();
+            menu.Items.Add("Mở lại", null, (s, e) => ShowFromTray());
+            menu.Items.Add("Thoát", null, (s, e) =>
             {
-                countdownTimer.Stop();
-                lblCountdown.Text = $"Đang chờ tác vụ kế tiếp...";
-            }
+                trayIcon.Visible = false;
+                Application.Exit();
+            });
+
+            trayIcon.ContextMenuStrip = menu;
         }
 
-        private int countdownMax = 0;
+        private void HideToTray()
+        {
+            this.Hide();
 
-        public void StartCountdown(int seconds)
-        {
-            countdownMax = seconds;
-            remainingSeconds = seconds;
-            countdownTimer.Start();
+            trayIcon.BalloonTipTitle = "Auto Monitor";
+            trayIcon.BalloonTipText = "Đã thu nhỏ xuống khay hệ thống";
+            trayIcon.ShowBalloonTip(1000);
         }
-        public void ShowPopup()
+
+        private void ShowFromTray()
         {
-            try
-            {
-                if (!this.Visible)
-                {
-                    this.Show();
-                    this.BringToFront();
-                }
-                else
-                {
-                    // cửa sổ đang hiện → chỉ đưa lên trước
-                    this.BringToFront();
-                }
-            }
-            catch { }
+            this.Show();
+            this.WindowState = FormWindowState.Normal;
+            this.BringToFront();
+            this.Activate();
         }
+
+        // ===== UPDATE =====
+        public void UpdateProgress(int totalPages, int runningTabs, int totalNew, int totalSaved)
+        {
+            lblTotal.Text = $"📄 Tổng page: {totalPages}";
+            lblTab.Text = $"🧠 Tab đang chạy: {runningTabs}";
+            lblNew.Text = $"🆕 Bài mới: {totalNew}";
+            lblSaved.Text = $"💾 Đã lưu: {totalSaved}";
+
+            int percent = totalPages == 0 ? 0 : Math.Min(100, (totalNew * 100) / (totalPages * 10));
+            progressBar.Value = percent;
+
+            if (!this.Visible)
+                this.Show();
+        }
+
         public void InitEmpty()
         {
-            lblPage.Text = "Đang chạy: --";
-            lblTotalPages.Text = "Tổng Page: --";
-            lblCompleted.Text = "Hoàn thành: --";
-            lblPosts.Text = "Tổng bài mới: --";
-            lblCountdown.Text = "Chạy lại sau: --";
-
-            progressBar.Value = 0;
+            UpdateProgress(0, 0, 0, 0);
         }
 
-        public void UpdateProgress(string runningPage, int totalPages, int completedPages, int totalPosts)
-        {
-            lblPage.Text = $"Đang chạy: {runningPage}";
-            lblTotalPages.Text = $"Tổng Page: {totalPages}";
-            lblCompleted.Text = $"Hoàn thành: {completedPages}";
-            lblPosts.Text = $"Tổng bài mới: {totalPosts}";
-
-            this.Show();
-            this.BringToFront();
-        }
         public static PopupAuto Ensure()
         {
             if (Instance == null || Instance.IsDisposed)
@@ -197,33 +194,29 @@ namespace CrawlFB_PW._1._0.Page
 
             return Instance;
         }
-        private bool dragging = false;
-        private Point dragCursor;
-        private Point dragForm;
 
-        protected override void OnMouseDown(MouseEventArgs e)
+        // ===== DRAG WINDOW =====
+        private void EnableDrag(Control ctrl)
         {
-            dragging = true;
-            dragCursor = Cursor.Position;
-            dragForm = this.Location;
-        }
+            bool dragging = false;
+            Point start = Point.Empty;
 
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            if (dragging)
+            ctrl.MouseDown += (s, e) =>
             {
-                Point diff = Point.Subtract(Cursor.Position, new Size(dragCursor));
-                this.Location = Point.Add(dragForm, new Size(diff));
-            }
-        }
+                dragging = true;
+                start = new Point(e.X, e.Y);
+            };
 
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            dragging = false;
-        }
-        private void btnHide_Click(object sender, EventArgs e)
-        {
-            this.Hide();
+            ctrl.MouseMove += (s, e) =>
+            {
+                if (dragging)
+                {
+                    this.Left += e.X - start.X;
+                    this.Top += e.Y - start.Y;
+                }
+            };
+
+            ctrl.MouseUp += (s, e) => dragging = false;
         }
     }
 }

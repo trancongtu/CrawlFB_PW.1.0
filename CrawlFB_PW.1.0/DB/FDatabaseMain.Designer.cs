@@ -41,6 +41,8 @@
             this.ACEPerson = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             this.fluentDesignFormControl1 = new DevExpress.XtraBars.FluentDesignSystem.FluentDesignFormControl();
             this.fluentFormDefaultManager1 = new DevExpress.XtraBars.FluentDesignSystem.FluentFormDefaultManager(this.components);
+            this.ACEPageAdded = new DevExpress.XtraBars.Navigation.AccordionControlElement();
+            this.ACEPageCrawl = new DevExpress.XtraBars.Navigation.AccordionControlElement();
             ((System.ComponentModel.ISupportInitialize)(this.accordionControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.fluentDesignFormControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.fluentFormDefaultManager1)).BeginInit();
@@ -73,6 +75,8 @@
             this.ACPageMain.Elements.AddRange(new DevExpress.XtraBars.Navigation.AccordionControlElement[] {
             this.ACEPageAll,
             this.ACEPageNote,
+            this.ACEPageAdded,
+            this.ACEPageCrawl,
             this.ACEPageMonitor});
             this.ACPageMain.Expanded = true;
             this.ACPageMain.Name = "ACPageMain";
@@ -138,6 +142,18 @@
             // 
             this.fluentFormDefaultManager1.Form = this;
             // 
+            // ACEPageAdded
+            // 
+            this.ACEPageAdded.Name = "ACEPageAdded";
+            this.ACEPageAdded.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
+            this.ACEPageAdded.Text = "Hội nhóm đã check";
+            // 
+            // ACEPageCrawl
+            // 
+            this.ACEPageCrawl.Name = "ACEPageCrawl";
+            this.ACEPageCrawl.Style = DevExpress.XtraBars.Navigation.ElementStyle.Item;
+            this.ACEPageCrawl.Text = "Hội nhóm chưa quét";
+            // 
             // FDatabaseMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 16F);
@@ -171,5 +187,7 @@
         private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPostAll;
         private DevExpress.XtraBars.Navigation.AccordionControlElement ACPerson;
         private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPerson;
+        private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPageAdded;
+        private DevExpress.XtraBars.Navigation.AccordionControlElement ACEPageCrawl;
     }
 }

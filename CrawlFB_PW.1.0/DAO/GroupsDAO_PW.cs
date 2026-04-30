@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DevExpress.XtraBars.Docking2010.Views.WindowsUI;
 using CrawlFB_PW._1._0.Helper;
+using CrawlFB_PW._1._0.Enums;
 
 namespace CrawlFB_PW._1._0.DAO
 {
@@ -72,7 +73,8 @@ namespace CrawlFB_PW._1._0.DAO
                 string PostTime = "N/A", OriginalPostTime = "N/A";
                 string PostLink = "N/A", OriginalPostLink = "N/A";
                 string Content = "N/A", OriginalContent = "N/A";
-                string PostStatus = "N/A", Topic = "N/A";
+                string Topic = "N/A";
+                PostType PostStatus = PostType.UnknowType;
                 int CommentCount = 0, ShareCount = 0;
                 // 1️⃣ Lấy các node postinfor (giống Selenium)
                 var postinfor = await post.QuerySelectorAllAsync("div[class='xu06os2 x1ok221b']");  
@@ -91,7 +93,7 @@ namespace CrawlFB_PW._1._0.DAO
                 {
 
                     (PostTime, PostLink, OriginalPosterName, OriginalPosterLink, PosterName, PosterLink) = await ExtractFallback(page,post);
-                    PostStatus = "Bài Reel";
+                    PostStatus = PostType.page_Real_Cap;
                 }
                 try
                 {
@@ -111,26 +113,25 @@ namespace CrawlFB_PW._1._0.DAO
                                     {
                                         Content = await BackgroundTextAllAsync(page, post);
                                         if (!string.IsNullOrWhiteSpace(Content))
-                                            PostStatus = "bài đăng kèm ảnh/video";
+                                            PostStatus = PostType.Page_Photo_Cap;
                                         else
-                                            PostStatus = "bài đăng không có nội dung";
+                                            PostStatus = PostType.Page_NoConent;
                                     }
                                     else
                                     {
-                                        PostStatus = "bài đăng có nội dung";
+                                        PostStatus = PostType.Page_Normal;
                                     }
                                 }//else là 2 nền màu, ảnh
                                 else
                                 {
                                     // var listText = new List<string>();
                                     Content = await GetBackgroundTextAsync(post);
-                                    PostStatus = "bài đăng nền màu/ảnh";                               
+                                    PostStatus = PostType.Page_BackGround;                              
                                 }
 
                             }
                        break;
-                       case 2:
-                            PostStatus = "Bài Share lại";
+                       case 2:                            
                             switch (postinfor.Count)
                             {                            
                                 case 6:
@@ -143,7 +144,7 @@ namespace CrawlFB_PW._1._0.DAO
                                         (OriginalPosterName, OriginalPosterLink) = await GetPosterInfoBySelectorsAsync(posterContainer);
                                         var originalContentContainer = GetSafe(postinfor, 5);
                                         OriginalContent = await GetContentTextAsync(page, originalPosterContainer);
-                                        PostStatus = "Bài share lại đầy đủ";
+                                        PostStatus = PostType.Share_WithContent;
                                     }                                    
                                     break;
                                 case 5:
@@ -174,15 +175,14 @@ namespace CrawlFB_PW._1._0.DAO
                                         if (hasUserContent)
                                         {
                                             // Người chia sẻ có viết => bài gốc thiếu nội dung
-                                            Content = possibleContent;
-                                            PostStatus = "bài share lại thiếu content bài gốc";
+                                            Content = possibleContent;                                       
                                         }
                                         else
                                         {
                                             // Người chia sẻ không viết => bài gốc có nội dung ở index 4
                                             var maybeOriginalContentContainer = GetSafe(postinfor, 4);
                                             OriginalContent = await GetContentTextAsync(page, maybeOriginalContentContainer);
-                                            PostStatus = "bài share lại thiếu content người chia sẻ";
+                                            PostStatus = PostType.Share_NoContent;
                                         }
                                         break;
                                     }
@@ -198,12 +198,9 @@ namespace CrawlFB_PW._1._0.DAO
                                     Content = await BackgroundTextAllAsync(page, post);
                                     if (!string.IsNullOrWhiteSpace(Content))
                                     {
-                                        PostStatus = "fallback";
+                                        PostStatus = PostType.Page_Normal;
                                     }
-                                    else
-                                    {
-                                        PostStatus = "lỗi";
-                                    }                              
+                   
                                 }
                             }
                             break;

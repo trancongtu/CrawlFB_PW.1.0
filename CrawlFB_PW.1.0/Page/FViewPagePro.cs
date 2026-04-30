@@ -81,6 +81,13 @@ namespace CrawlFB_PW._1._0.Page
                 case "ACEPageMonitor":
                     _ucPageView.LoadSource("PageMonitor");
                     break;
+                case "ACEPageAdded":
+                    _ucPageView.LoadSource("PageAdded");
+                    break;
+
+                case "ACEPageCrawl":
+                    _ucPageView.LoadSource("PageCrawl");
+                    break;
 
                 // ================== PHẦN BÀI VIẾT PAGE ==================
                 case "ACEPostPageNote":
@@ -98,6 +105,11 @@ namespace CrawlFB_PW._1._0.Page
         }
 
         private void ACEPateMain_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void ACEPageCrawl_Click(object sender, EventArgs e)
         {
 
         }

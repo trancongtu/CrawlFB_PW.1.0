@@ -765,6 +765,33 @@ namespace CrawlFB_PW._1._0.DAO
             return null;
         }
         // xử lý content
-     
+        // human trong auto
+        public async Task HumanScrollRefreshAsync(IPage page, bool goTop = true)
+        {
+            var rnd = new Random();
+
+            if (goTop && rnd.NextDouble() < 0.6)
+            {
+                // 🔼 về đầu trang (giống user check bài mới)
+                await page.Keyboard.PressAsync("Home");
+                await page.WaitForTimeoutAsync(rnd.Next(300, 800));
+            }
+
+            int steps = rnd.Next(3, 6);
+
+            for (int i = 0; i < steps; i++)
+            {
+                await page.Mouse.WheelAsync(0, rnd.Next(250, 600));
+                await page.WaitForTimeoutAsync(rnd.Next(200, 600));
+
+                if (rnd.NextDouble() < 0.3)
+                {
+                    await page.Mouse.WheelAsync(0, -rnd.Next(100, 250));
+                    await page.WaitForTimeoutAsync(rnd.Next(200, 500));
+                }
+            }
+
+            await page.WaitForTimeoutAsync(rnd.Next(800, 1500));
+        }
     }
 }

@@ -17,8 +17,7 @@ namespace CrawlFB_PW._1._0.Topic
 {
     public partial class FConvertTopic : Form
     {
-        private List<string> _highlightKeywords = new List<string>();
-        private bool _isCheckKeywordMode = false;
+        private List<string> _highlightKeywords = new List<string>();       
         public FConvertTopic()
         {
             InitializeComponent();

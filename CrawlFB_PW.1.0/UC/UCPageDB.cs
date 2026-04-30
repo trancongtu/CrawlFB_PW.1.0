@@ -93,10 +93,13 @@ namespace CrawlFB_PW._1._0.UC
                     return SQLDAO.Instance.GetPageInfoPage(pageIndex, pageSize, out totalRows);
 
                 case PageSourceType.PageNote:
-                    return SQLDAO.Instance.GetPageNotePage(pageIndex, pageSize, out totalRows);
-
+                    return SQLDAO.Instance.GetPageNotePaging(pageIndex, pageSize, out totalRows);
                 case PageSourceType.PageMonitor:
                     return SQLDAO.Instance.GetPageMonitorPage(pageIndex, pageSize, out totalRows);
+                case PageSourceType.PageAdd:
+                    return SQLDAO.Instance.GetPageInfoPage_ByType(pageIndex, pageSize, true, out totalRows);
+                case PageSourceType.PageCrawl:
+                    return SQLDAO.Instance.GetPageInfoPage_ByType(pageIndex, pageSize, false, out totalRows);
                 default:
                     totalRows = 0;
                     return new DataTable();

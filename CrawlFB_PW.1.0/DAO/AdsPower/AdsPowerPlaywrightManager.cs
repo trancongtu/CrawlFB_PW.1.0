@@ -1054,7 +1054,7 @@ namespace CrawlFB_PW._1._0.DAO
                 }
 
                 var newPage = await popupTask;
-
+                await newPage.GotoAsync(url);
                 await newPage.WaitForLoadStateAsync(
                     LoadState.DOMContentLoaded);
 
@@ -1068,10 +1068,7 @@ namespace CrawlFB_PW._1._0.DAO
                 return null;
             }
         }
-        public async Task<bool> OpenFacebookLinkHumanAsync(
-    IPage page,
-    string url,
-    int maxRetry = 2)
+        public async Task<bool> OpenFacebookLinkHumanAsync(IPage page,string url,int maxRetry = 2)
         {
             if (page == null || page.IsClosed || string.IsNullOrWhiteSpace(url))
                 return false;
@@ -1151,7 +1148,91 @@ namespace CrawlFB_PW._1._0.DAO
 
             return false;
         }
+        // mở tab mới popup
+        public async Task<IPage> OpenTabAndPrepareDomAsync(IPage mainPage,string url,int timeoutMs = 15000)
+        {
+            if (mainPage == null || mainPage.IsClosed || string.IsNullOrWhiteSpace(url))
+                return null;
 
+            try
+            {
+                // ===============================
+                // 1️⃣ MỞ TAB MỚI (GIỮ CONTEXT)
+                // ===============================
+                var popupTask = mainPage.Context.WaitForPageAsync();
+
+                await mainPage.EvaluateAsync(
+                    "(u) => window.open(u, '_blank')",
+                    url
+                );
+
+                var finished = await Task.WhenAny(
+                    popupTask,
+                    Task.Delay(timeoutMs)
+                );
+
+                if (finished != popupTask)
+                {
+                    Libary.Instance.LogDebug("❌ [OpenTab] Timeout mở tab");
+                    return null;
+                }
+
+                var newPage = await popupTask;
+
+                // ===============================
+                // 2️⃣ ÉP LOAD LẠI URL (QUAN TRỌNG)
+                // ===============================
+                await newPage.GotoAsync(url, new PageGotoOptions
+                {
+                    WaitUntil = WaitUntilState.DOMContentLoaded,
+                    Timeout = timeoutMs
+                });
+
+                // ===============================
+                // 3️⃣ ĐỢI LOAD NHẸ
+                // ===============================
+                await newPage.WaitForTimeoutAsync(500);
+
+                // ===============================
+                // 4️⃣ SCROLL GIẢ LẬP USER
+                // ===============================
+                for (int i = 0; i < 2; i++)
+                {
+                    await newPage.EvaluateAsync("() => window.scrollBy(0, document.body.scrollHeight)");
+                    await newPage.WaitForTimeoutAsync(1000);
+                }
+
+                // scroll ngược lên (rất quan trọng cho FB)
+                await newPage.EvaluateAsync("() => window.scrollTo(0, 0)");
+                await newPage.WaitForTimeoutAsync(500);
+
+                // ===============================
+                // 5️⃣ WAIT DOM CHÍNH (POST)
+                // ===============================
+                try
+                {
+                    await newPage.WaitForSelectorAsync(
+                        "div[data-ad-rendering-role='story_message']",
+                        new PageWaitForSelectorOptions { Timeout = 4000 });
+                }
+                catch
+                {
+                    // fallback nhẹ thôi, không fail
+                }
+
+                // ===============================
+                // 6️⃣ DEBUG URL (optional)
+                // ===============================
+                Libary.Instance.LogDebug($"[OpenTab] Final URL: {newPage.Url}");
+
+                return newPage;
+            }
+            catch (Exception ex)
+            {
+                Libary.Instance.LogDebug($"❌ [OpenTab] Exception: {ex.Message}");
+                return null;
+            }
+        }
         public static async Task OpenByAddressBarAsync(IPage page, string url)
         {
             // Đảm bảo đang có page mở
@@ -1175,6 +1256,33 @@ namespace CrawlFB_PW._1._0.DAO
             await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
             await page.WaitForTimeoutAsync(2000);
         }
+        // hàm kiểm tra profile đang chạy thật
+        public bool IsProfileActive(string profileId)
+        {
+            try
+            {
+                lock (_sessions)
+                {
+                    if (_sessions.ContainsKey(profileId))
+                    {
+                        var s = _sessions[profileId];
 
+                        if (s != null &&
+                            s.Page != null &&
+                            !s.Page.IsClosed &&
+                            s.Context != null)
+                        {
+                            return true; // 🔥 đang chạy thật
+                        }
+                    }
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

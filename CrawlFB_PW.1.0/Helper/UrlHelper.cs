@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CrawlFB_PW._1._0.Helper
@@ -205,7 +206,37 @@ namespace CrawlFB_PW._1._0.Helper
 
             return match.Groups[1].Value + "/";
         }
+        public static string ExtractIdFromUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return null;
 
+            // profile.php?id=123
+            var m1 = Regex.Match(url, @"id=(\d+)");
+            if (m1.Success) return m1.Groups[1].Value;
+
+            // /groups/123
+            var m2 = Regex.Match(url, @"/groups/(\d+)");
+            if (m2.Success) return m2.Groups[1].Value;
+
+            // /pages/123
+            var m3 = Regex.Match(url, @"/pages/(\d+)");
+            if (m3.Success) return m3.Groups[1].Value;
+
+            // /people/.../123
+            var m4 = Regex.Match(url, @"/people/.+?/(\d+)");
+            if (m4.Success) return m4.Groups[1].Value;
+
+            // 🔥 QUAN TRỌNG: facebook.com/123456
+            var m5 = Regex.Match(url, @"facebook\.com/(\d+)");
+            if (m5.Success) return m5.Groups[1].Value;
+
+            // 🔥 reel / posts
+            var m6 = Regex.Match(url, @"/(reel|posts)/(\d+)");
+            if (m6.Success) return m6.Groups[2].Value;
+
+            return null;
+        }
     }
 
 }

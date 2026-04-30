@@ -14,6 +14,7 @@ using CrawlFB_PW._1._0.Profile;
 using DocumentFormat.OpenXml.Presentation;
 using Microsoft.Playwright;
 using CrawlFB_PW._1._0.Helper;
+using CrawlFB_PW._1._0.Enums;
 
 namespace CrawlFB_PW._1._0.Page
 {
@@ -21,7 +22,7 @@ namespace CrawlFB_PW._1._0.Page
     {
         private string SelectedProfileId = "";
         private List<string> SelectedProfiles = new List<string>();
-        private string SearchType = "";   // "Fanpage" hoặc "Group"
+        private FBType SearchType = FBType.Unknown;   // "Fanpage" hoặc "Group"
         private bool _isRunning = false;     // đang chạy job
         private bool _hasGridData = false;   // grid có dữ liệu hay chưa
         public class PageInfoGrid
@@ -31,7 +32,7 @@ namespace CrawlFB_PW._1._0.Page
             public string PageName { get; set; }
             public string PageLink { get; set; }
             public string PageMembers { get; set; }
-            public string PageType { get; set; }
+            public FBType PageType { get; set; }
 
             // 👉 GIÁ TRỊ THẬT (LOGIC)
             public DateTime? TimeLastPost { get; set; }
@@ -236,7 +237,7 @@ namespace CrawlFB_PW._1._0.Page
         {
             if (barCheckItemFanPage.Checked)
             {
-                SearchType = "Fanpage";
+                SearchType = FBType.Fanpage;
                 barCheckItemGroups.Checked = false;
                 Libary.Instance.LogForm(nameof(FFindPage), "Shearch: Fanpage");
             }
@@ -245,7 +246,7 @@ namespace CrawlFB_PW._1._0.Page
         {
             if (barCheckItemGroups.Checked)
             {
-                SearchType = "Group";
+                SearchType = FBType.GroupOn;
                 barCheckItemFanPage.Checked = false;
                 Libary.Instance.LogForm(nameof(FFindPage), "Shearch: Groups");
             }
@@ -253,7 +254,7 @@ namespace CrawlFB_PW._1._0.Page
         private async void barButtonItemRun_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             // ===== 0️⃣ CHECK INPUT CƠ BẢN (KHÔNG KHÓA BAR) =====
-            if (string.IsNullOrEmpty(SearchType))
+            if (SearchType == FBType.Unknown)
             {
                 MessageBox.Show(
                     "Bạn chưa chọn loại tìm kiếm (Fanpage hoặc Groups)!",
@@ -325,9 +326,9 @@ namespace CrawlFB_PW._1._0.Page
 
                 // ===== 5️⃣ MỞ TRANG SEARCH =====
                 bool opened = false;
-                if (SearchType == "Fanpage")
+                if (SearchType == FBType.Fanpage)
                     opened = await FindPageDAO.Instance.OpenSearchPageAsync(keyword, "pages");
-                else if (SearchType == "Group")
+                else if (SearchType == FBType.GroupOn)
                     opened = await FindPageDAO.Instance.OpenSearchPageAsync(keyword, "groups");
 
                 if (!opened)
@@ -670,7 +671,7 @@ namespace CrawlFB_PW._1._0.Page
                 return false;
             }
 
-            if (string.IsNullOrEmpty(SearchType))
+            if (SearchType == FBType.Unknown)
             {
                 MessageBox.Show("Chưa chọn Fanpage / Group!");
                 return false;
@@ -696,7 +697,23 @@ namespace CrawlFB_PW._1._0.Page
         }
         private async Task<bool> OpenSearchPage(string keyword)
         {
-            string typePath = SearchType == "Fanpage" ? "pages" : "groups";
+            string typePath;
+
+            switch (SearchType)
+            {
+                case FBType.Fanpage:
+                    typePath = "pages";
+                    break;
+
+                case FBType.GroupOn:
+                case FBType.GroupOff:
+                    typePath = "groups";
+                    break;
+
+                default:
+                    throw new InvalidOperationException("SearchType chưa hợp lệ");
+            }
+
             return await FindPageDAO.Instance.OpenSearchPageAsync(keyword, typePath);
         }
         private void barButtonItemSaveDB_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)

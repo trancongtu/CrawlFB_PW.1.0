@@ -10,6 +10,7 @@ using CrawlFB_PW._1._0.ViewModels;
 using System.Linq;
 using CrawlFB_PW._1._0.DAO.Page;
 using CrawlFB_PW._1._0.Enums;
+using System.Reflection;
 namespace CrawlFB_PW._1._0.DAO
 {
     public class UpdatePostPageDAO
@@ -52,7 +53,7 @@ namespace CrawlFB_PW._1._0.DAO
                 var feed = await PageDAO.Instance.GetFeedContainerAsync(page);
                 if (feed == null)
                 {
-                    Libary.Instance.CreateLog("UpdatePostPage", "❌ Không tìm thấy feed");
+                    Libary.Instance.LogTech( "❌ Không tìm thấy feed");
                     return result;
                 }
 

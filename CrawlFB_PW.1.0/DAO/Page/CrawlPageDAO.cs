@@ -62,25 +62,25 @@ namespace CrawlFB_PW._1._0.DAO.Page
             // ======================
             // MAIN POST (SAU DETECTOR)
             // ======================
-            public string PostTime { get; set; } = "N/A";
-            public string PostLink { get; set; } = "N/A";
+            public string PostTime { get; set; } 
+            public string PostLink { get; set; } 
 
             // ======================
             // ORIGINAL POST (NẾU CÓ)
             // ======================
-            public string OriginalPostTime { get; set; } = "N/A";
-            public string OriginalPostLink { get; set; } = "N/A";
+            public string OriginalPostTime { get; set; } 
+            public string OriginalPostLink { get; set; } 
 
             // ======================
             // REEL DETECT
             // ======================
             public bool HasReel { get; set; }
-            public string ReelLink { get; set; } = "N/A";
-            public string PostTimeReel { get; set; } = "N/A";
+            public string ReelLink { get; set; } 
+            public string PostTimeReel { get; set; }
             //============= video Detect
             public bool HasVideo { get; set; }
-            public string VideoLink { get; set; } = "N/A";
-            public string PostTimeVideo { get; set; } = "N/A";
+            public string VideoLink { get; set; } 
+            public string PostTimeVideo { get; set; } 
             //photo Detect
             public bool HasPhoto { get; set; }
             public List<(string Src, string Alt)> PhotoList { get; set; }
@@ -117,8 +117,8 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 PostNode = postNode,
                 PageName = pageName,
                 PageLink = pageLink,
-                PageID = string.IsNullOrWhiteSpace(pageIdCrawl) || pageIdCrawl == "N/A" ? null : pageIdCrawl,
-                ContainerIdFB = string.IsNullOrWhiteSpace(idFBPageCrawl) || idFBPageCrawl == "N/A" ? null : idFBPageCrawl
+                PageID = Clean(pageIdCrawl),
+                ContainerIdFB = Clean(idFBPageCrawl)
             };
             // ========================
             // CONTEXT (FANPAGE / GROUP)
@@ -312,10 +312,12 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 info.PosterLink = raw.PageLink;
                 info.PosterIdFB = raw.ContainerIdFB;
                 info.PosterNote = FBType.Fanpage;
+                info.ContainerType = FBType.Fanpage;
                 Libary.Instance.LogTech("[ParseNormalPost] Poster = Fanpage (gán cứng)");
             }
             else
             {
+                info.ContainerType = FBType.GroupOn;
                 await CrawlBaseDAO.Instance.FillPosterInfoAsync(info, page, post, postinfor);
             }
             // ========================
@@ -416,9 +418,11 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 info.PosterLink = raw.PageLink;
                 info.PosterNote = FBType.Fanpage;
                 info.PosterIdFB = raw.ContainerIdFB;
+                info.ContainerType = FBType.Fanpage;
             }
             else
             {
+                info.ContainerType = FBType.GroupOn;
                 await CrawlBaseDAO.Instance.FillPosterInfoAsync(info, page, post, postinfor);
             }
 
@@ -442,14 +446,13 @@ namespace CrawlFB_PW._1._0.DAO.Page
 
                 var reel = await CrawlPostReelDAO.Instance.ExtractPostReelAll(page, post);
 
-                if (reel != null && reel.PostLink != "N/A")
+                if (reel != null && !string.IsNullOrWhiteSpace(reel.PostLink))
                 {
                     CrawlBaseDAO.Instance.MergeReelInfoIfEmpty(info, reel);
                 }
                 else
                 {
-                    Libary.Instance.LogTech(
-                        "[ParseReelHasTime] ⚠️ Không lấy được Reel detail");
+                    Libary.Instance.LogTech("[ParseReelHasTime] ⚠️ Không lấy được Reel detail");
                 }
             }
 
@@ -501,9 +504,11 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 infoA.PosterLink = raw.PageLink;
                 infoA.PosterIdFB = raw.ContainerIdFB;
                 infoA.PosterNote = FBType.Fanpage;
+                infoA.ContainerType = FBType.Fanpage;
             }
             else
             {
+                infoA.ContainerType = FBType.GroupOn;
                 await CrawlBaseDAO.Instance.FillPosterInfoAsync(infoA, page, post, postinfor);
             }
             // ---------- CONTENT SHARE ----------
@@ -556,7 +561,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 postB = BuildPostPage(infoB);
             }
 
-            if (postB != null && postB.PostLink != "N/A")
+            if (postB != null && !string.IsNullOrWhiteSpace(postB.PostLink))
             {
                 result.Posts.Add(postB);
 
@@ -584,8 +589,8 @@ namespace CrawlFB_PW._1._0.DAO.Page
          IReadOnlyList<IElementHandle> postinfor,
          bool isReel)
         {
-            string noidung = "N/A";
-            string noidunggoc = "N/A";
+            string noidung = null;
+            string noidunggoc = null;
 
             PostType postType = PostType.Share_NoContent;
             PostType originalPostType = PostType.Page_Unknow;
@@ -604,7 +609,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 {
                     noidung = await CrawlBaseDAO.Instance.GetContentTextAsync(page, postinfor[2]);
 
-                    if (!string.IsNullOrWhiteSpace(noidung) && noidung != "N/A")
+                    if (!string.IsNullOrWhiteSpace(noidung))
                     {
                         postType = PostType.Share_WithContent;
                         originalPostType = PostType.Page_Unknow;
@@ -711,7 +716,7 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 else if (c == 4)
                 {
                     noidung = await CrawlBaseDAO.Instance.BackgroundTextAllAsync(page, post);
-                    if (!string.IsNullOrWhiteSpace(noidung) && noidung != "N/A")
+                    if (!string.IsNullOrWhiteSpace(noidung))
                     {
                         postType = PostType.Share_NoContent;
                         Libary.Instance.LogDebug( "[ParseShareContent] CASE 4: Background share");
@@ -828,7 +833,9 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 RealPostTime = TimeHelper.ParseFacebookTime(raw.PostTime),
                 PageName = raw.PageName,
                 PageLink = raw.PageLink,
-                ContainerIdFB = raw.ContainerIdFB,
+                PageID = raw.PageID,
+               ContainerType = raw.Context == CrawlContext.Fanpage? FBType.Fanpage: FBType.GroupOn,
+                ContainerIdFB = raw.ContainerIdFB
             };
             Libary.Instance.LogTech($"INFOA IDFB: {infoA.ContainerIdFB}");
             // 1️⃣ Poster
@@ -864,19 +871,29 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 // =================================================
                 // C️⃣ SO SÁNH NGHIỆP VỤ (KHÔNG SO LINK)
                 // =================================================
+                bool hasPosterA = ProcessingHelper.IsValidContent(infoA.PosterIdFB);
+                bool hasPosterB = ProcessingHelper.IsValidContent(infoB.PosterIdFB);
+
                 bool samePoster =
-                ProcessingHelper.IsValidContent(infoA.PosterIdFB) &&
-                ProcessingHelper.IsValidContent(infoB.PosterIdFB) &&
-                infoA.PosterIdFB == infoB.PosterIdFB;
-                Libary.Instance.LogTech($"Kết quả so sánh Poster:  {samePoster}");
+                    (!hasPosterA || !hasPosterB) // ❗ thiếu dữ liệu → coi như TRUE
+                    || infoA.PosterIdFB == infoB.PosterIdFB;
+
+                Libary.Instance.LogTech(
+                    $"PosterCheck: A={infoA.PosterIdFB} | B={infoB.PosterIdFB} | " +
+                    $"HasA={hasPosterA} | HasB={hasPosterB} | Result={samePoster}"
+                );
+
                 bool hasIdA = ProcessingHelper.IsValidContent(infoA.ContainerIdFB);
                 bool hasIdB = ProcessingHelper.IsValidContent(infoB.ContainerIdFB);
-                Libary.Instance.LogTech($"InfoA IDFB:  {infoA.ContainerIdFB}");
-                Libary.Instance.LogTech($"InfoB IDFB:  {infoB.ContainerIdFB}");
-                bool samePage =(!hasIdA || !hasIdB) // ❗ thiếu IDFB → bỏ qua check
-                || infoA.ContainerIdFB == infoB.ContainerIdFB;
-                Libary.Instance.LogTech($"Kết quả so sánh Container:  {samePage}");
-               
+
+                bool sameContainer =
+                    (!hasIdA || !hasIdB) // ❗ thiếu ID → không fail
+                    || infoA.ContainerIdFB == infoB.ContainerIdFB;
+
+                Libary.Instance.LogTech($"Poster: {samePoster} | Container: {sameContainer}");
+                Libary.Instance.LogTech($"A.ContainerId: {infoA.ContainerIdFB}");
+                Libary.Instance.LogTech($"B.ContainerId: {infoB.ContainerIdFB}");
+
                 bool hasContentA =
                     !string.IsNullOrWhiteSpace(infoA.Content) &&
                     infoA.Content != "N/A";
@@ -885,33 +902,43 @@ namespace CrawlFB_PW._1._0.DAO.Page
                     !string.IsNullOrWhiteSpace(infoB.Content) &&
                     infoB.Content != "N/A";
 
-                // 🔑 khai báo 1 lần
                 double similarity = -1;
-
-                // ===============================
-                // RULE CỨNG
-                // ===============================
                 bool isRealReel = false;
 
-                if (samePoster && samePage && hasContentA && hasContentB)
-                {
-                    similarity = TextSimilarity.Similarity(
-                        infoA.Content,
-                        infoB.Content);
+                // =================================================
+                // 🔑 RULE CHÍNH: ƯU TIÊN ENTITY
+                // =================================================
+                bool isSameEntity = samePoster && sameContainer;
 
-                    isRealReel = similarity >= 0.7;
+                if (isSameEntity)
+                {
+                    if (hasContentA && hasContentB)
+                    {
+                        similarity = TextSimilarity.Similarity(
+                            infoA.Content,
+                            infoB.Content);
+
+                        if (similarity >= 0.7)
+                        {
+                            isRealReel = true;
+                        }
+                    }
+                    else
+                    {
+                        // ❗ KEY: thiếu content vẫn coi là REAL
+                        isRealReel = true;
+                    }
                 }
-                
+
                 Libary.Instance.LogTech(
                     $"[Reel-Compare] " +
                     $"SamePoster={samePoster} | " +
-                    $"SamePage(ID)={samePage} | " +
+                    $"SameContainer={sameContainer} | " +
                     $"HasA={hasContentA} | " +
                     $"HasB={hasContentB} | " +
-                    $"Sim={(similarity >= 0 ? similarity.ToString("0.00") : "N/A")} | " +
-                    $"A.ContainerId={infoA.ContainerIdFB} | " +
-                    $"B.ContainerId={infoB.ContainerIdFB}"
+                    $"Sim={(similarity >= 0 ? similarity.ToString("0.00") : "N/A")}"
                 );
+
                 //check page person
                 bool isPerson =
                     infoB.PosterNote == FBType.Person ||
@@ -923,9 +950,20 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 // =================================================
                 if (isRealReel)
                 {
+                    // 🔄 Dùng luôn hasContentA / hasContentB đã tính ở trên
+                    if (!hasContentA && hasContentB)
+                    {
+                        infoA.Content = infoB.Content;
+
+                        Libary.Instance.LogTech(
+                            "[Reel] 🔄 Merge content B → A (A thiếu content)");
+                    }
+
                     var postA = BuildPostPage(infoA);
-                    if(hasContentA) postA.PostType = PostType.page_Real_Cap.ToString();
-                    else postA.PostType = PostType.Page_Reel_NoCap.ToString();
+
+                    postA.PostType = hasContentA || hasContentB
+                        ? PostType.page_Real_Cap
+                        : PostType.Page_Reel_NoCap;
 
                     Libary.Instance.LogTech(
                         "[Reel] ✅ GROUP REEL (REAL – 1 post, NOT share)");
@@ -941,18 +979,17 @@ namespace CrawlFB_PW._1._0.DAO.Page
                 // ===== SHARE REEL
                 var postA2 = BuildPostPage(infoA);
                 postA2.PostType = hasContentA
-                    ? PostType.Share_Reel_ConTent.ToString()
-                    : PostType.Share_Reel_NoContent.ToString();
+                    ? PostType.Share_Reel_ConTent
+                    : PostType.Share_Reel_NoContent;
 
                 var postB = BuildPostPage(infoB);
-                postB.PostType =
-                    hasContentB
+                postB.PostType =hasContentB
                         ? (isPerson
-                            ? PostType.Person_Reel_ConTent.ToString()
-                            : PostType.page_Real_Cap.ToString())
+                            ? PostType.Person_Reel_ConTent
+                            : PostType.page_Real_Cap)
                         : (isPerson
-                            ? PostType.Person_Reel_NoConent.ToString()
-                            : PostType.Page_Reel_NoCap.ToString());
+                            ? PostType.Person_Reel_NoConent
+                            : PostType.Page_Reel_NoCap);
                 result.Posts.Add(postA2);
                 result.Posts.Add(postB);
 
@@ -983,28 +1020,43 @@ namespace CrawlFB_PW._1._0.DAO.Page
 
                 PosterName = info.PosterName,
                 PosterLink = info.PosterLink,
-                PosterNote = info.PosterNote.ToString(),
-                PosterIdFB = string.IsNullOrWhiteSpace(info.PosterIdFB) || info.PosterIdFB == "N/A"
-                    ? null
-                    : info.PosterIdFB,
+                PosterNote = info.PosterNote,
+                PosterIdFB = !string.IsNullOrWhiteSpace(info.PosterIdFB)
+                    ? info.PosterIdFB
+                    : UrlHelper.ExtractIdFromUrl(info.PosterLink),
 
                 PageName = info.PageName,
                 PageLink = info.PageLink,
-                PageID = string.IsNullOrWhiteSpace(info.PageID) || info.PageID == "N/A"
-                    ? null
-                    : info.PageID,
-                ContainerIdFB = string.IsNullOrWhiteSpace(info.ContainerIdFB) || info.ContainerIdFB == "N/A"
-                    ? null
+
+                PageID = !string.IsNullOrWhiteSpace(info.PageID)
+                    ? info.PageID
                     : info.ContainerIdFB,
+
+                ContainerIdFB = !string.IsNullOrWhiteSpace(info.ContainerIdFB)
+                    ? info.ContainerIdFB
+                    : info.PageID,
+
+                ContainerType = info.ContainerType,
 
                 Content = info.Content,
 
                 LikeCount = info.LikeCount,
                 CommentCount = info.CommentCount,
                 ShareCount = info.ShareCount,
+
                 Attachment = info.AttachmentJson,
-                PostType = info.PostType.ToString()
+                PostType = info.PostType
             };
+        }
+        public static string Clean(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+
+            s = s.Trim();
+
+            return s.Equals("N/A", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : s;
         }
     }
 

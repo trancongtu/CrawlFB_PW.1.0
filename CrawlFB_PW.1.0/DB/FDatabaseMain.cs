@@ -57,8 +57,15 @@ namespace CrawlFB_PW._1._0.DB
                     ShowUC(_ucPageDB);
                     _ucPageDB.LoadSource(PageSourceType.PageInfo);                 
                     break;
+                case "ACEPageAdded":
+                    ShowUC(_ucPageDB);
+                    _ucPageDB.LoadSource(PageSourceType.PageAdd);
+                    break;
                 case "ACEPageNote":
                     _ucPageDB.LoadSource(PageSourceType.PageNote); 
+                    break;
+                case "ACEPageCrawl":
+                    _ucPageDB.LoadSource(PageSourceType.PageCrawl);
                     break;
                 case "ACEPageMonitor":
                     break;

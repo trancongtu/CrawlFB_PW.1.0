@@ -184,7 +184,7 @@ namespace CrawlFB_PW._1._0.Helper
             if ((i != -1) && (j != -1))
             {
                 idfb = link.Substring(i + 4, j - i - 4);
-                linkfb = "https://Fb.com/" + idfb;
+                linkfb = "https://facebook.com/" + idfb;
             }
 
             // Trường hợp link có định dạng bài viết /posts/... kèm ?__
@@ -315,37 +315,46 @@ namespace CrawlFB_PW._1._0.Helper
         {
             if (string.IsNullOrWhiteSpace(url))
                 return "";
-            url = url.Trim();
-            // Bỏ http://, https://, www
+
+            url = url.Trim().ToLower();
+
+            // Bỏ http, https, www
             url = Regex.Replace(url, @"^https?://", "", RegexOptions.IgnoreCase);
             url = Regex.Replace(url, @"^www\.", "", RegexOptions.IgnoreCase);
-            // Chuẩn domain về fb.com
-            url = Regex.Replace(url, @"^facebook\.com", "fb.com", RegexOptions.IgnoreCase);
-            url = Regex.Replace(url, @"^fb\.com", "fb.com", RegexOptions.IgnoreCase);
-            // Tách path + query
+
+            // 🔥 CHUẨN DOMAIN VỀ facebook.com
+            url = Regex.Replace(url, @"^fb\.com", "facebook.com", RegexOptions.IgnoreCase);
+            url = Regex.Replace(url, @"^m\.facebook\.com", "facebook.com", RegexOptions.IgnoreCase);
+            url = Regex.Replace(url, @"^web\.facebook\.com", "facebook.com", RegexOptions.IgnoreCase);
+
+            // Tách query
             string path = url;
             string query = "";
+
             int qIndex = url.IndexOf("?");
             if (qIndex >= 0)
             {
                 path = url.Substring(0, qIndex);
-                query = url.Substring(qIndex); // giữ lại ?...
+                query = url.Substring(qIndex);
             }
-            // ⭐ TRƯỜNG HỢP PROFILE.PHP → GIỮ QUERY
-            if (path.EndsWith("profile.php", StringComparison.OrdinalIgnoreCase))
+
+            // giữ query cho profile.php
+            if (path.EndsWith("profile.php"))
             {
                 return "https://" + path + query;
             }
-            // Các case khác → bỏ query
-            // Bỏ hash nếu có
+
+            // bỏ hash
             int h = path.IndexOf("#");
             if (h >= 0)
                 path = path.Substring(0, h);
+
             path = path.TrimEnd('/');
+
             return "https://" + path;
         }
         // sử dụng trong scancheckpageDAO
-         public  static string ExtractPageInfoFromHtml(string html)
+        public  static string ExtractPageInfoFromHtml(string html)
         {
             if (string.IsNullOrEmpty(html)) return null;
 
@@ -375,7 +384,7 @@ namespace CrawlFB_PW._1._0.Helper
 
             // 1️⃣ Nếu chỉ nhập số → profile/page ID
             if (Regex.IsMatch(url, @"^\d+$"))
-                return $"https://fb.com/{url}";
+                return $"https://facebook.com/{url}";
 
             // 2️⃣ Thêm scheme nếu thiếu
             if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
@@ -388,8 +397,8 @@ namespace CrawlFB_PW._1._0.Helper
             string host = uri.Host
                 .Replace("www.", "")
                 .Replace("m.facebook.com", "facebook.com")
-                .Replace("web.facebook.com", "facebook.com")
-                .Replace("facebook.com", "fb.com");
+                .Replace("web.facebook.com", "facebook.com");
+
 
             // 4️⃣ GIỮ QUERY cho profile.php
             if (uri.AbsolutePath.Equals("/profile.php", StringComparison.OrdinalIgnoreCase))
@@ -563,14 +572,7 @@ namespace CrawlFB_PW._1._0.Helper
 
             try
             {
-                originalLink = originalLink.Trim();
-
-                // đổi domain fb về fb.com
-                originalLink = originalLink
-                    .Replace("https://www.facebook.com", "https://fb.com")
-                    .Replace("https://web.facebook.com", "https://fb.com")
-                    .Replace("https://facebook.com", "https://fb.com");
-
+                originalLink = originalLink.Trim();          
                 // CASE: permalink.php => giữ story_fbid + id, cắt bỏ toàn bộ rác sau &__cft__
                 if (originalLink.Contains("permalink.php") && originalLink.Contains("story_fbid"))
                 {
@@ -850,28 +852,47 @@ namespace CrawlFB_PW._1._0.Helper
 
             return PostType.Page_Normal;
         }
+        public static string GetPostTypeView(PostType type)
+        {
+            switch (type)
+            {
+                case PostType.Page_Normal: return "Bài thường";
+                case PostType.Page_Photo_Cap: return "Ảnh có cap";
+                case PostType.Page_Photo_NoCap: return "Ảnh không cap";
+                case PostType.Page_NoConent: return "Không nội dung";
+                case PostType.Share_WithContent: return "Share có nội dung";
+                case PostType.Share_NoContent: return "Share không nội dung";
+                case PostType.Page_Video_Cap: return "Video có cap";
+                case PostType.Page_Video_Nocap: return "Video không cap";
+                case PostType.page_Real_Cap: return "Reel có cap";
+                case PostType.Page_Reel_NoCap: return "Reel không cap";
+                case PostType.Page_BackGround: return "Background";
+                case PostType.Page_LinkWeb: return "Link web";
+                default: return "Không rõ";
+            }
+        }
         //REEL
         public static string NormalizeReelLink(string reelLink)
         {
             if (string.IsNullOrWhiteSpace(reelLink))
-                return "N/A";
+                return "";
 
-            reelLink = reelLink.Trim();
+            reelLink = reelLink.Trim().ToLower();
 
-            // Đã là link đầy đủ
+            // đã full link → normalize domain luôn
             if (reelLink.StartsWith("http://") || reelLink.StartsWith("https://"))
-                return reelLink;
+                return NormalizeFacebookUrl(reelLink);
 
-            // Dạng /reel/xxxx
+            // dạng /reel/xxx
             if (reelLink.StartsWith("/reel/"))
-                return "https://fb.com" + reelLink;
+                return "https://facebook.com" + reelLink;
 
-            // Dạng reel/xxxx
+            // dạng reel/xxx
             if (reelLink.StartsWith("reel/"))
-                return "https://fb.com/" + reelLink;
+                return "https://facebook.com/" + reelLink;
 
             // fallback
-            return reelLink;
+            return NormalizeFacebookUrl(reelLink);
         }
         public static string NormalizeReelPosterProfile(string href)
         {

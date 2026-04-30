@@ -13,7 +13,7 @@ namespace CrawlFB_PW._1._0.DTO
         // 1️⃣ Thông tin định danh
         // ==============================
         public string PostID { get; set; } = null;
-        public string PostLink { get; set; } = "N/A";
+        public string PostLink { get; set; }
 
         // ==============================
         // 2️⃣ Thời gian (CHỈ DÙNG DATETIME)
@@ -23,22 +23,22 @@ namespace CrawlFB_PW._1._0.DTO
         // ==============================
         // 3️⃣ Nội dung
         // ==============================
-        public string Content { get; set; } = "N/A";
-        public string Attachment { get; set; } = "N/A";
+        public string Content { get; set; } 
+        public string Attachment { get; set; } 
 
         // ==============================
         // 4️⃣ Người đăng
         // ==============================
-        public string PosterName { get; set; } = "N/A";
-        public string PosterLink { get; set; } = "N/A";
+        public string PosterName { get; set; } 
+        public string PosterLink { get; set; } 
         public string PosterIdFB { get; set; } = null;
-        public string PosterNote { get; set; } = "N/A";
+        public string PosterNote { get; set; } 
 
         // ==============================
         // 5️⃣ Trang / Group chứa bài
         // ==============================
-        public string PageName { get; set; } = "N/A";
-        public string PageLink { get; set; } = "N/A";
+        public string PageName { get; set; } 
+        public string PageLink { get; set; } 
         public string ContainerIdFB { get; set; } = null;
 
         // ==============================
@@ -64,7 +64,7 @@ namespace CrawlFB_PW._1._0.DTO
         // ==============================
         // 9️⃣ Phân tích
         // ==============================
-        public string Topic { get; set; } = "N/A";
+        public string Topic { get; set; } 
         public int AttentionScore { get; set; }
         public int NegativeScore { get; set; }
         public int ResultLevel { get; set; }

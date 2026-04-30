@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Playwright;
 using CrawlFB_PW._1._0.DTO;
 using System.Text.RegularExpressions;
+using CrawlFB_PW._1._0.Enums;
 namespace CrawlFB_PW._1._0.DAO
 {
     public class FindPageDAO
@@ -54,7 +55,7 @@ namespace CrawlFB_PW._1._0.DAO
             }
         }
 
-        public async Task<List<PageInfo>> RunFastSearchAsync(string searchType, int maxPost, int MinFlow)
+        public async Task<List<PageInfo>> RunFastSearchAsync(FBType searchType, int maxPost, int MinFlow)
         {
             var result = new List<PageInfo>();
             int noNewCount = 0;
@@ -268,7 +269,7 @@ namespace CrawlFB_PW._1._0.DAO
         }
 
         //=============
-        public async Task<List<PageInfo>> RunAndCheckAsync(string searchType, int maxPost, int minFlow)
+        public async Task<List<PageInfo>> RunAndCheckAsync(FBType searchType, int maxPost, int minFlow)
         {
             // 1️⃣ lấy danh sách page như RUN bình thường
             var list = await RunFastSearchAsync(searchType, maxPost, minFlow);

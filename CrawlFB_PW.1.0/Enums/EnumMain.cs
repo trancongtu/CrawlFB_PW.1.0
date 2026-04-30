@@ -8,7 +8,9 @@ namespace CrawlFB_PW._1._0.Enums
 {
     public enum PageSourceType
     {
-        PageInfo,
+        PageInfo,// tổng page
+        PageAdd,// page người dùng add
+        PageCrawl,// page từ crawl lưu về
         PageNote,
         PageMonitor,
         PostInfo,
@@ -63,12 +65,17 @@ namespace CrawlFB_PW._1._0.Enums
         Page_LinkWeb,
         Share_NoContent,
         Share_WithContent,
-            Share_Reel_NoContent,
-            Share_Reel_ConTent,
+        Share_Reel_NoContent,
+        Share_Reel_ConTent,
         Person_Normal, 
         Person_Reel_ConTent,
         Person_Unknow,
-        Person_Reel_NoConent
+        Person_Reel_NoConent,
+        Person_Photo_Nocap,
+        Person_Photo_cap,
+        Person_video_Nocap,
+        Person_video_cap, 
+        UnknowType
     }
     public enum PostKind
     {

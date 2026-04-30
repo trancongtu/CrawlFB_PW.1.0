@@ -10,6 +10,8 @@ using System.Linq;
 using DocumentFormat.OpenXml.Office.Word;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using CrawlFB_PW._1._0.Enums;
+using CrawlFB_PW._1._0.Helper.Data;
 
 namespace CrawlFB_PW._1._0.DAO
 {
@@ -345,18 +347,9 @@ namespace CrawlFB_PW._1._0.DAO
             }
             string pageContainerId = GenerateHashId(p.PageLink);
             // Người đăng
-            bool isPagePoster = false;
-            bool isPersonPoster = false;
+            bool isPagePoster = p.PosterNote == FBType.Fanpage ||p.PosterNote == FBType.GroupOn ||p.PosterNote == FBType.GroupOff;
 
-            if (!string.IsNullOrWhiteSpace(p.PosterNote))
-            {
-                string note = p.PosterNote.ToLower();
-
-                if (note.Contains("fanpage") || note.Contains("page") || note.Contains("group"))
-                    isPagePoster = true;
-                else
-                    isPersonPoster = true;
-            }
+            bool isPersonPoster = p.PosterNote == FBType.Person || p.PosterNote == FBType.PersonKOL;
 
             // ID người đăng
             string posterPageId = null;
@@ -431,7 +424,7 @@ namespace CrawlFB_PW._1._0.DAO
                         cmd.Parameters.AddWithValue("@id", posterPersonId);
                         cmd.Parameters.AddWithValue("@link", p.PosterLink ?? "");
                         cmd.Parameters.AddWithValue("@name", p.PosterName ?? "");
-                        cmd.Parameters.AddWithValue("@note", p.PosterNote ?? "N/A");
+                        cmd.Parameters.AddWithValue("@note", p.PosterNote);
                         cmd.ExecuteNonQuery();
                         cmd.Parameters.Clear();
                     }
@@ -789,7 +782,7 @@ ORDER BY datetime(pi.PostTimeSave) DESC;
                                 CommentCount = Convert.ToInt32(r["CommentCount"]),
 
                                 Attachment = r["PostAttachment"].ToString(),
-                               PostType = r["PostStatus"].ToString(),
+                                PostType = r.GetEnum("PostStatus", PostType.UnknowType),
 
                                 // Page chứa bài viết
                                 PageName = r["ContainerPageName"].ToString(),
@@ -801,19 +794,23 @@ ORDER BY datetime(pi.PostTimeSave) DESC;
                             {
                                 dto.PosterName = r["PosterPageName"].ToString();
                                 dto.PosterLink = r["PosterPageLink"].ToString();
-                                dto.PosterNote = "page";
+                                dto.PosterNote = FBType.Fanpage;
                             }
                             else if (!string.IsNullOrEmpty(r["PosterPersonName"].ToString()))
                             {
                                 dto.PosterName = r["PosterPersonName"].ToString();
                                 dto.PosterLink = r["PosterPersonLink"].ToString();
-                                dto.PosterNote = r["PosterPersonNote"].ToString();
+                                 dto.PosterNote = Enum.TryParse(
+                                 r["PosterPersonNote"]?.ToString(),
+                                 true, // ignore case
+                                 out FBType type
+                             ) ? type : FBType.Unknown;
                             }
                             else
                             {
                                 dto.PosterName = "N/A";
                                 dto.PosterLink = "N/A";
-                                dto.PosterNote = "unknown";
+                                dto.PosterNote = FBType.Unknown;
                             }
 
                             list.Add(dto);
@@ -1066,22 +1063,25 @@ ORDER BY datetime(pi.PostTimeSave) DESC;
                     using (var cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = sql;
+
                         using (var reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
                             {
                                 list.Add(new PageInfo
                                 {
-                                    PageID = reader["PageID"]?.ToString() ?? "N/A",
-                                    IDFBPage = reader["IDFBPage"]?.ToString() ?? "N/A",
-                                    PageLink = reader["PageLink"]?.ToString() ?? "N/A",
-                                    PageName = reader["PageName"]?.ToString() ?? "N/A",
-                                    PageType = reader["PageType"]?.ToString() ?? "N/A",
-                                    PageMembers = reader["PageMembers"]?.ToString() ?? "N/A",
-                                    PageInteraction = reader["PageInteraction"]?.ToString() ?? "N/A",
-                                    PageEvaluation = reader["PageEvaluation"]?.ToString() ?? "N/A",
-                                    PageInfoText = reader["PageInfoText"]?.ToString() ?? "N/A",
-                                    PageTimeSave = reader["PageTimeSave"]?.ToString() ?? "N/A"
+                                    PageID = reader.GetStringOrNull("PageID"),
+                                    IDFBPage = reader.GetStringOrNull("IDFBPage"),
+                                    PageLink = reader.GetStringOrNull("PageLink"),
+                                    PageName = reader.GetStringOrNull("PageName"),
+                                    // 🔥 enum
+                                    PageType = reader.GetEnum("PageType", FBType.Unknown),
+                                    PageMembers = reader.GetStringOrNull("PageMembers"),
+                                    PageInteraction = reader.GetStringOrNull("PageInteraction"),
+                                    PageEvaluation = reader.GetStringOrNull("PageEvaluation"),
+                                    PageInfoText = reader.GetStringOrNull("PageInfoText"),
+                                    // ⚠️ tạm để string nếu chưa đổi model
+                                    PageTimeSave = reader.GetStringOrNull("PageTimeSave")
                                 });
                             }
                         }
@@ -1203,16 +1203,16 @@ ORDER BY PageTimeSave DESC
                         {
                             return new PageInfo
                             {
-                                PageID = rd["PageID"].ToString(),
-                                IDFBPage = rd["IDFBPage"]?.ToString(),
-                                PageLink = rd["PageLink"]?.ToString(),
-                                PageName = rd["PageName"]?.ToString(),
-                                PageType = rd["PageType"]?.ToString(),
-                                PageMembers = rd["PageMembers"]?.ToString(),
-                                PageInteraction = rd["PageInteraction"]?.ToString(),
-                                PageEvaluation = rd["PageEvaluation"]?.ToString(),
-                                PageInfoText = rd["PageInfoText"]?.ToString(),
-                                PageTimeSave = rd["PageTimeSave"]?.ToString()
+                                PageID = rd.GetStringOrNull("PageID"),
+                                IDFBPage = rd.GetStringOrNull("IDFBPage"),
+                                PageLink = rd.GetStringOrNull("PageLink"),
+                                PageName = rd.GetStringOrNull("PageName"),
+                                PageType = rd.GetEnum("PageType", FBType.Unknown),
+                                PageMembers = rd.GetStringOrNull("PageMembers"),
+                                PageInteraction = rd.GetStringOrNull("PageInteraction"),
+                                PageEvaluation = rd.GetStringOrNull("PageEvaluation"),
+                                PageInfoText = rd.GetStringOrNull("PageInfoText"),
+                                PageTimeSave = rd.GetStringOrNull("PageTimeSave")
                             };
                         }
                     }
@@ -1482,13 +1482,13 @@ ORDER BY PageTimeSave DESC
                             {
                                 list.Add(new PersonInfo
                                 {
-                                    PersonID = reader["PersonID"]?.ToString() ?? "N/A",
-                                    IDFBPerson = reader["IDFBPerson"]?.ToString() ?? "N/A",
-                                    PersonLink = reader["PersonLink"]?.ToString() ?? "N/A",
-                                    PersonName = reader["PersonName"]?.ToString() ?? "N/A",
-                                    PersonInfoText = reader["PersonInfo"]?.ToString() ?? "N/A",
-                                    PersonNote = reader["PersonNote"]?.ToString() ?? "N/A",
-                                    PersonTimeSave = reader["PersonTimeSave"]?.ToString() ?? "N/A"
+                                    PersonID = reader.GetStringOrNull("PersonID"),
+                                    IDFBPerson = reader.GetStringOrNull("IDFBPerson"),
+                                    PersonLink = reader.GetStringOrNull("PersonLink"),
+                                    PersonName = reader.GetStringOrNull("PersonName"),
+                                    PersonInfoText = reader.GetStringOrNull("PersonInfo"),
+                                    PersonNote = reader.GetEnum("PersonNote", FBType.Unknown),
+                                    PersonTimeSave = reader.GetStringOrNull("PersonTimeSave")
                                 });
                             }
                         }
@@ -1847,16 +1847,21 @@ ORDER BY PersonTimeSave DESC
 
                     using (var cmd = new SQLiteCommand(sql, conn))
                     {
-                        cmd.Parameters.AddWithValue("@id", page.PageID);
-                        cmd.Parameters.AddWithValue("@fbid", page.IDFBPage ?? "N/A");
-                        cmd.Parameters.AddWithValue("@link", page.PageLink ?? "N/A");
-                        cmd.Parameters.AddWithValue("@name", page.PageName ?? "N/A");
-                        cmd.Parameters.AddWithValue("@type", page.PageType ?? "N/A");
-                        cmd.Parameters.AddWithValue("@members", page.PageMembers ?? "N/A");
-                        cmd.Parameters.AddWithValue("@interaction", page.PageInteraction ?? "N/A");
-                        cmd.Parameters.AddWithValue("@eval", page.PageEvaluation ?? "N/A");
-                        cmd.Parameters.AddWithValue("@info", page.PageInfoText ?? "N/A");
-                        cmd.Parameters.AddWithValue("@timesave", page.PageTimeSave ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                        cmd.Parameters.AddWithValue("@id", (object)page.PageID ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@fbid", (object)page.IDFBPage ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@link", (object)page.PageLink ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@name", (object)page.PageName ?? DBNull.Value);
+
+                        // enum -> string (DB đang là string)
+                        cmd.Parameters.AddWithValue("@type", page.PageType.ToString());
+
+                        cmd.Parameters.AddWithValue("@members", (object)page.PageMembers ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@interaction", (object)page.PageInteraction ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@eval", (object)page.PageEvaluation ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@info", (object)page.PageInfoText ?? DBNull.Value);
+
+                        cmd.Parameters.AddWithValue("@timesave",
+                            (object)page.PageTimeSave ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
                         cmd.ExecuteNonQuery();
                     }
@@ -2065,6 +2070,7 @@ ORDER BY PersonTimeSave DESC
             try
             {
                 string dbPath = PathHelper.Instance.GetMainDatabasePath();
+
                 using (var conn = SqliteHelper.Instance.GetConnection(dbPath))
                 {
                     conn.Open();
@@ -2085,28 +2091,37 @@ ORDER BY PersonTimeSave DESC
 
                         using (var da = new SQLiteDataAdapter(cmd))
                         {
-                            DataTable dt = new DataTable();
+                            var dt = new DataTable();
                             da.Fill(dt);
 
                             if (dt.Rows.Count == 0)
                                 return null;
 
-                            DataRow r = dt.Rows[0];
+                            var r = dt.Rows[0];
 
                             return new PageInfo
                             {
-                                PageID = r["PageID"].ToString(),
-                                IDFBPage = r["IDFBPage"].ToString(),
-                                PageLink = r["PageLink"].ToString(),
-                                PageName = r["PageName"].ToString(),
-                                PageType = r["PageType"].ToString(),
-                                PageMembers = r["PageMembers"].ToString(),
-                                PageInteraction = r["PageInteraction"].ToString(),
-                                PageEvaluation = r["PageEvaluation"].ToString(),
-                                PageInfoText = r["PageInfoText"].ToString(),
-                                PageTimeSave = r["PageTimeSave"].ToString(),
+                                PageID = r["PageID"] == DBNull.Value ? null : r["PageID"].ToString(),
+                                IDFBPage = r["IDFBPage"] == DBNull.Value ? null : r["IDFBPage"].ToString(),
+                                PageLink = r["PageLink"] == DBNull.Value ? null : r["PageLink"].ToString(),
+                                PageName = r["PageName"] == DBNull.Value ? null : r["PageName"].ToString(),
+
+                                // 🔥 enum
+                                PageType = r["PageType"] == DBNull.Value
+                                    ? FBType.Unknown
+                                    : Enum.TryParse<FBType>(r["PageType"].ToString(), true, out var t)
+                                        ? t
+                                        : FBType.Unknown,
+
+                                PageMembers = r["PageMembers"] == DBNull.Value ? null : r["PageMembers"].ToString(),
+                                PageInteraction = r["PageInteraction"] == DBNull.Value ? null : r["PageInteraction"].ToString(),
+                                PageEvaluation = r["PageEvaluation"] == DBNull.Value ? null : r["PageEvaluation"].ToString(),
+                                PageInfoText = r["PageInfoText"] == DBNull.Value ? null : r["PageInfoText"].ToString(),
+                                PageTimeSave = r["PageTimeSave"] == DBNull.Value ? null : r["PageTimeSave"].ToString(),
+
                                 IsScanned = r.Table.Columns.Contains("IsScanned") &&
-                                                  Convert.ToInt32(r["IsScanned"]) == 1
+                                            r["IsScanned"] != DBNull.Value &&
+                                            Convert.ToInt32(r["IsScanned"]) == 1
                             };
                         }
                     }

@@ -62,7 +62,10 @@ public class UIPagerBarHelper
         barBottom.AddItem(BtnLast);
         barBottom.AddItem(CbPageSize);
     }
-
+    public void Reset()
+    {
+        PageIndex = 1;
+    }
     public void Update(int totalRows)
     {
         TotalRows = totalRows;
@@ -87,7 +90,10 @@ public class UIPagerBarHelper
     {
         OnPageChanged?.Invoke(PageIndex, PageSize);
     }
-
+    public void SetPageIndex(int pageIndex)
+    {
+        PageIndex = pageIndex < 1 ? 1 : pageIndex;
+    }
     BarButtonItem CreateButton(BarManager bm, string caption, ItemClickEventHandler click)
     {
         var btn = new BarButtonItem(bm, caption);

@@ -41,14 +41,15 @@
             this.barCheckItemUnder60 = new DevExpress.XtraBars.BarCheckItem();
             this.barCheckItemUnder90 = new DevExpress.XtraBars.BarCheckItem();
             this.barCheckItemRemoveGroupoff = new DevExpress.XtraBars.BarCheckItem();
-            this.barButtonItemRemovePageNoteNotScan = new DevExpress.XtraBars.BarButtonItem();
             this.txb_PageShearch = new DevExpress.XtraBars.BarEditItem();
             this.repositoryItemTextEdit1 = new DevExpress.XtraEditors.Repository.RepositoryItemTextEdit();
+            this.btn_DeleteAllPostPage = new DevExpress.XtraBars.BarButtonItem();
             this.bar2 = new DevExpress.XtraBars.Bar();
-            this.btnAddPage = new DevExpress.XtraBars.BarButtonItem();
-            this.btnDelete = new DevExpress.XtraBars.BarButtonItem();
-            this.btnDeletePage = new DevExpress.XtraBars.BarButtonItem();
-            this.btnAddPageNote = new DevExpress.XtraBars.BarButtonItem();
+            this.SubItemEdit = new DevExpress.XtraBars.BarSubItem();
+            this.btn_AddPage = new DevExpress.XtraBars.BarButtonItem();
+            this.btn_EditPage = new DevExpress.XtraBars.BarButtonItem();
+            this.btn_DeletePage = new DevExpress.XtraBars.BarButtonItem();
+            this.btn_AddPageNote = new DevExpress.XtraBars.BarButtonItem();
             this.barSubItemchechpage = new DevExpress.XtraBars.BarSubItem();
             this.barButtonItemUpdateLastTimePost = new DevExpress.XtraBars.BarButtonItem();
             this.barButtonItemUpdateType = new DevExpress.XtraBars.BarButtonItem();
@@ -66,7 +67,11 @@
             this.panelControlGrid = new DevExpress.XtraEditors.PanelControl();
             this.gridControl1 = new DevExpress.XtraGrid.GridControl();
             this.gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            this.btn_DeleteAllPostPage = new DevExpress.XtraBars.BarButtonItem();
+            this.barSubItem1 = new DevExpress.XtraBars.BarSubItem();
+            this.btn_AddPagenote2 = new DevExpress.XtraBars.BarButtonItem();
+            this.btn_DeletePageNote = new DevExpress.XtraBars.BarButtonItem();
+            this.btn_AddPageMonitor = new DevExpress.XtraBars.BarButtonItem();
+            this.btn_DeletePageMonitor = new DevExpress.XtraBars.BarButtonItem();
             ((System.ComponentModel.ISupportInitialize)(this.barManager1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.repositoryItemTextEdit1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.panelControlDetail)).BeginInit();
@@ -88,10 +93,6 @@
             this.barManager1.DockControls.Add(this.barDockControlRight);
             this.barManager1.Form = this;
             this.barManager1.Items.AddRange(new DevExpress.XtraBars.BarItem[] {
-            this.btnAddPage,
-            this.btnDelete,
-            this.btnDeletePage,
-            this.btnAddPageNote,
             this.barSubItemchechpage,
             this.barButtonItemUpdateLastTimePost,
             this.btnSelectAll,
@@ -106,14 +107,23 @@
             this.barCheckItem3,
             this.barCheckItemRemoveGroupoff,
             this.barCheckItemUnder90,
-            this.barButtonItemRemovePageNoteNotScan,
             this.barSubItemExport,
             this.barButtonItem1,
             this.barButtonItemExportAllPage,
             this.txb_PageShearch,
-            this.btn_DeleteAllPostPage});
+            this.btn_DeleteAllPostPage,
+            this.SubItemEdit,
+            this.btn_AddPage,
+            this.btn_EditPage,
+            this.btn_DeletePage,
+            this.btn_AddPageNote,
+            this.barSubItem1,
+            this.btn_AddPagenote2,
+            this.btn_DeletePageNote,
+            this.btn_AddPageMonitor,
+            this.btn_DeletePageMonitor});
             this.barManager1.MainMenu = this.bar2;
-            this.barManager1.MaxItemId = 28;
+            this.barManager1.MaxItemId = 39;
             this.barManager1.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
             this.repositoryItemTextEdit1});
             this.barManager1.StatusBar = this.bar3;
@@ -128,7 +138,6 @@
             new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.btnSelectAll, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
             new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.barButtonItem1removeSelectAll, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
             new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.barSubItemFilter, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
-            new DevExpress.XtraBars.LinkPersistInfo(this.barButtonItemRemovePageNoteNotScan),
             new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.txb_PageShearch, DevExpress.XtraBars.BarItemPaintStyle.Caption),
             new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.btn_DeleteAllPostPage, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph)});
             this.bar1.Text = "Tools";
@@ -204,24 +213,27 @@
             this.barCheckItemRemoveGroupoff.Name = "barCheckItemRemoveGroupoff";
             this.barCheckItemRemoveGroupoff.CheckedChanged += new DevExpress.XtraBars.ItemClickEventHandler(this.barCheckItemRemoveGroupoff_CheckedChanged);
             // 
-            // barButtonItemRemovePageNoteNotScan
-            // 
-            this.barButtonItemRemovePageNoteNotScan.Caption = "Xóa PageNote chưa chạy";
-            this.barButtonItemRemovePageNoteNotScan.Id = 21;
-            this.barButtonItemRemovePageNoteNotScan.Name = "barButtonItemRemovePageNoteNotScan";
-            this.barButtonItemRemovePageNoteNotScan.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barButtonItemRemovePageNoteNotScan_ItemClick);
-            // 
             // txb_PageShearch
             // 
             this.txb_PageShearch.Caption = "Tìm Page";
             this.txb_PageShearch.Edit = this.repositoryItemTextEdit1;
             this.txb_PageShearch.Id = 26;
             this.txb_PageShearch.Name = "txb_PageShearch";
+            this.txb_PageShearch.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.txb_PageShearch_ItemClick);
             // 
             // repositoryItemTextEdit1
             // 
             this.repositoryItemTextEdit1.AutoHeight = false;
             this.repositoryItemTextEdit1.Name = "repositoryItemTextEdit1";
+            // 
+            // btn_DeleteAllPostPage
+            // 
+            this.btn_DeleteAllPostPage.Caption = "Xóa Bài viết Page";
+            this.btn_DeleteAllPostPage.Id = 27;
+            this.btn_DeleteAllPostPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_DeleteAllPostPage.ImageOptions.Image")));
+            this.btn_DeleteAllPostPage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_DeleteAllPostPage.ImageOptions.LargeImage")));
+            this.btn_DeleteAllPostPage.Name = "btn_DeleteAllPostPage";
+            this.btn_DeleteAllPostPage.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_DeleteAllPostPage_ItemClick);
             // 
             // bar2
             // 
@@ -230,73 +242,61 @@
             this.bar2.DockRow = 0;
             this.bar2.DockStyle = DevExpress.XtraBars.BarDockStyle.Top;
             this.bar2.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
-            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.btnAddPage, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
-            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.btnDelete, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
-            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.btnDeletePage, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
-            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.btnAddPageNote, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
+            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.SubItemEdit, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
             new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.barSubItemchechpage, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
+            new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.barSubItem1, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph),
             new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, this.barSubItemExport, DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph)});
             this.bar2.OptionsBar.MultiLine = true;
             this.bar2.OptionsBar.UseWholeRow = true;
             this.bar2.Text = "Main menu";
             // 
-            // btnAddPage
+            // SubItemEdit
             // 
-            this.btnAddPage.Border = DevExpress.XtraEditors.Controls.BorderStyles.Default;
-            this.btnAddPage.Caption = "Thêm Page";
-            this.btnAddPage.Id = 0;
-            this.btnAddPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnAddPage.ImageOptions.Image")));
-            this.btnAddPage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnAddPage.ImageOptions.LargeImage")));
-            this.btnAddPage.ItemAppearance.Disabled.Font = new System.Drawing.Font("Times New Roman", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnAddPage.ItemAppearance.Disabled.Options.UseFont = true;
-            this.btnAddPage.ItemAppearance.Hovered.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnAddPage.ItemAppearance.Hovered.Options.UseFont = true;
-            this.btnAddPage.ItemAppearance.Normal.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnAddPage.ItemAppearance.Normal.Options.UseFont = true;
-            this.btnAddPage.Name = "btnAddPage";
+            this.SubItemEdit.Caption = "Edit";
+            this.SubItemEdit.Id = 28;
+            this.SubItemEdit.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("SubItemEdit.ImageOptions.Image")));
+            this.SubItemEdit.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("SubItemEdit.ImageOptions.LargeImage")));
+            this.SubItemEdit.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_AddPage),
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_EditPage),
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_DeletePage),
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_AddPageNote)});
+            this.SubItemEdit.Name = "SubItemEdit";
             // 
-            // btnDelete
+            // btn_AddPage
             // 
-            this.btnDelete.Border = DevExpress.XtraEditors.Controls.BorderStyles.Default;
-            this.btnDelete.Caption = "Sửa Page";
-            this.btnDelete.Id = 1;
-            this.btnDelete.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnDelete.ImageOptions.Image")));
-            this.btnDelete.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnDelete.ImageOptions.LargeImage")));
-            this.btnDelete.ItemAppearance.Hovered.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDelete.ItemAppearance.Hovered.Options.UseFont = true;
-            this.btnDelete.ItemAppearance.Normal.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDelete.ItemAppearance.Normal.Options.UseFont = true;
-            this.btnDelete.Name = "btnDelete";
+            this.btn_AddPage.Caption = "Thêm Page";
+            this.btn_AddPage.Id = 29;
+            this.btn_AddPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_AddPage.ImageOptions.Image")));
+            this.btn_AddPage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_AddPage.ImageOptions.LargeImage")));
+            this.btn_AddPage.Name = "btn_AddPage";
+            this.btn_AddPage.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_AddPage_ItemClick);
             // 
-            // btnDeletePage
+            // btn_EditPage
             // 
-            this.btnDeletePage.Border = DevExpress.XtraEditors.Controls.BorderStyles.Default;
-            this.btnDeletePage.Caption = "Xóa Page";
-            this.btnDeletePage.Id = 2;
-            this.btnDeletePage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnDeletePage.ImageOptions.Image")));
-            this.btnDeletePage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnDeletePage.ImageOptions.LargeImage")));
-            this.btnDeletePage.ItemAppearance.Disabled.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDeletePage.ItemAppearance.Disabled.Options.UseFont = true;
-            this.btnDeletePage.ItemAppearance.Hovered.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDeletePage.ItemAppearance.Hovered.Options.UseFont = true;
-            this.btnDeletePage.ItemAppearance.Normal.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDeletePage.ItemAppearance.Normal.Options.UseFont = true;
-            this.btnDeletePage.Name = "btnDeletePage";
-            this.btnDeletePage.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnDeletePage_ItemClick);
+            this.btn_EditPage.Caption = "Sửa Page";
+            this.btn_EditPage.Id = 30;
+            this.btn_EditPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_EditPage.ImageOptions.Image")));
+            this.btn_EditPage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_EditPage.ImageOptions.LargeImage")));
+            this.btn_EditPage.Name = "btn_EditPage";
             // 
-            // btnAddPageNote
+            // btn_DeletePage
             // 
-            this.btnAddPageNote.Border = DevExpress.XtraEditors.Controls.BorderStyles.Default;
-            this.btnAddPageNote.Caption = "Thêm Vào PageNote";
-            this.btnAddPageNote.Id = 3;
-            this.btnAddPageNote.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btnAddPageNote.ImageOptions.Image")));
-            this.btnAddPageNote.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnAddPageNote.ImageOptions.LargeImage")));
-            this.btnAddPageNote.ItemAppearance.Hovered.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnAddPageNote.ItemAppearance.Hovered.Options.UseFont = true;
-            this.btnAddPageNote.ItemAppearance.Normal.Font = new System.Drawing.Font("Times New Roman", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnAddPageNote.ItemAppearance.Normal.Options.UseFont = true;
-            this.btnAddPageNote.Name = "btnAddPageNote";
-            this.btnAddPageNote.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnAddPageNote_ItemClick);
+            this.btn_DeletePage.Caption = "Xóa Page";
+            this.btn_DeletePage.Id = 31;
+            this.btn_DeletePage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_DeletePage.ImageOptions.Image")));
+            this.btn_DeletePage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_DeletePage.ImageOptions.LargeImage")));
+            this.btn_DeletePage.Name = "btn_DeletePage";
+            this.btn_DeletePage.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_DeletePage_ItemClick);
+            // 
+            // btn_AddPageNote
+            // 
+            this.btn_AddPageNote.Caption = "Add Groups PageNote";
+            this.btn_AddPageNote.Id = 32;
+            this.btn_AddPageNote.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_AddPageNote.ImageOptions.Image")));
+            this.btn_AddPageNote.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_AddPageNote.ImageOptions.LargeImage")));
+            this.btn_AddPageNote.Name = "btn_AddPageNote";
+            this.btn_AddPageNote.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_AddPageNote_ItemClick);
             // 
             // barSubItemchechpage
             // 
@@ -314,6 +314,7 @@
             this.barButtonItemUpdateLastTimePost.Caption = "Update Last Time Post";
             this.barButtonItemUpdateLastTimePost.Id = 6;
             this.barButtonItemUpdateLastTimePost.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("barButtonItemUpdateLastTimePost.ImageOptions.Image")));
+            this.barButtonItemUpdateLastTimePost.ImageOptions.ImageUri.Uri = "Refresh";
             this.barButtonItemUpdateLastTimePost.Name = "barButtonItemUpdateLastTimePost";
             this.barButtonItemUpdateLastTimePost.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barButtonItemUpdateLastTimePost_ItemClick);
             // 
@@ -440,14 +441,51 @@
             this.gridView1.Name = "gridView1";
             this.gridView1.OptionsView.ShowGroupPanel = false;
             // 
-            // btn_DeleteAllPostPage
+            // barSubItem1
             // 
-            this.btn_DeleteAllPostPage.Caption = "Xóa Bài viết Page";
-            this.btn_DeleteAllPostPage.Id = 27;
-            this.btn_DeleteAllPostPage.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_DeleteAllPostPage.ImageOptions.Image")));
-            this.btn_DeleteAllPostPage.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_DeleteAllPostPage.ImageOptions.LargeImage")));
-            this.btn_DeleteAllPostPage.Name = "btn_DeleteAllPostPage";
-            this.btn_DeleteAllPostPage.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_DeleteAllPostPage_ItemClick);
+            this.barSubItem1.Caption = "Phân Loại Page";
+            this.barSubItem1.Id = 33;
+            this.barSubItem1.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("barSubItem1.ImageOptions.Image")));
+            this.barSubItem1.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("barSubItem1.ImageOptions.LargeImage")));
+            this.barSubItem1.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] {
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_AddPagenote2),
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_DeletePageNote),
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_AddPageMonitor),
+            new DevExpress.XtraBars.LinkPersistInfo(this.btn_DeletePageMonitor)});
+            this.barSubItem1.Name = "barSubItem1";
+            // 
+            // btn_AddPagenote2
+            // 
+            this.btn_AddPagenote2.Caption = "Add PageNote";
+            this.btn_AddPagenote2.Id = 34;
+            this.btn_AddPagenote2.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_AddPagenote2.ImageOptions.Image")));
+            this.btn_AddPagenote2.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_AddPagenote2.ImageOptions.LargeImage")));
+            this.btn_AddPagenote2.Name = "btn_AddPagenote2";
+            this.btn_AddPagenote2.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btn_AddPagenote2_ItemClick);
+            // 
+            // btn_DeletePageNote
+            // 
+            this.btn_DeletePageNote.Caption = "Delete PageNote";
+            this.btn_DeletePageNote.Id = 35;
+            this.btn_DeletePageNote.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_DeletePageNote.ImageOptions.Image")));
+            this.btn_DeletePageNote.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_DeletePageNote.ImageOptions.LargeImage")));
+            this.btn_DeletePageNote.Name = "btn_DeletePageNote";
+            // 
+            // btn_AddPageMonitor
+            // 
+            this.btn_AddPageMonitor.Caption = "Add PageMonitor";
+            this.btn_AddPageMonitor.Id = 36;
+            this.btn_AddPageMonitor.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_AddPageMonitor.ImageOptions.Image")));
+            this.btn_AddPageMonitor.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_AddPageMonitor.ImageOptions.LargeImage")));
+            this.btn_AddPageMonitor.Name = "btn_AddPageMonitor";
+            // 
+            // btn_DeletePageMonitor
+            // 
+            this.btn_DeletePageMonitor.Caption = "Delete PageMonitor";
+            this.btn_DeletePageMonitor.Id = 37;
+            this.btn_DeletePageMonitor.ImageOptions.Image = ((System.Drawing.Image)(resources.GetObject("btn_DeletePageMonitor.ImageOptions.Image")));
+            this.btn_DeletePageMonitor.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btn_DeletePageMonitor.ImageOptions.LargeImage")));
+            this.btn_DeletePageMonitor.Name = "btn_DeletePageMonitor";
             // 
             // UPageView
             // 
@@ -479,14 +517,6 @@
         private DevExpress.XtraBars.Bar bar1;
         private DevExpress.XtraBars.Bar bar2;
         private DevExpress.XtraBars.Bar bar3;
-       // private DevExpress.XtraBars.BarDockControl barDockControlTop;
-       // private DevExpress.XtraBars.BarDockControl barDockControlBottom;
-      //  private DevExpress.XtraBars.BarDockControl barDockControlLeft;
-       // private DevExpress.XtraBars.BarDockControl barDockControlRight;
-        private DevExpress.XtraBars.BarButtonItem btnAddPage;
-        private DevExpress.XtraBars.BarButtonItem btnDelete;
-        private DevExpress.XtraBars.BarButtonItem btnDeletePage;
-        private DevExpress.XtraBars.BarButtonItem btnAddPageNote;
         private DevExpress.XtraEditors.PanelControl panelControlDetail;
         private DevExpress.XtraEditors.PanelControl panelControlGrid;
         private DevExpress.XtraGrid.GridControl gridControl1;
@@ -509,12 +539,21 @@
         private DevExpress.XtraBars.BarCheckItem barCheckItem3;
         private DevExpress.XtraBars.BarCheckItem barCheckItemRemoveGroupoff;
         private DevExpress.XtraBars.BarCheckItem barCheckItemUnder90;
-        private DevExpress.XtraBars.BarButtonItem barButtonItemRemovePageNoteNotScan;
         private DevExpress.XtraBars.BarSubItem barSubItemExport;
         private DevExpress.XtraBars.BarButtonItem barButtonItem1;
         private DevExpress.XtraBars.BarButtonItem barButtonItemExportAllPage;
         private DevExpress.XtraBars.BarEditItem txb_PageShearch;
         private DevExpress.XtraEditors.Repository.RepositoryItemTextEdit repositoryItemTextEdit1;
         private DevExpress.XtraBars.BarButtonItem btn_DeleteAllPostPage;
+        private DevExpress.XtraBars.BarSubItem SubItemEdit;
+        private DevExpress.XtraBars.BarButtonItem btn_AddPage;
+        private DevExpress.XtraBars.BarButtonItem btn_EditPage;
+        private DevExpress.XtraBars.BarButtonItem btn_DeletePage;
+        private DevExpress.XtraBars.BarButtonItem btn_AddPageNote;
+        private DevExpress.XtraBars.BarSubItem barSubItem1;
+        private DevExpress.XtraBars.BarButtonItem btn_AddPagenote2;
+        private DevExpress.XtraBars.BarButtonItem btn_DeletePageNote;
+        private DevExpress.XtraBars.BarButtonItem btn_AddPageMonitor;
+        private DevExpress.XtraBars.BarButtonItem btn_DeletePageMonitor;
     }
 }

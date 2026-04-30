@@ -4,7 +4,7 @@ using System.Data.SQLite;
 using CrawlFB_PW._1._0;
 using CrawlFB_PW._1._0.DAO;
 using CrawlFB_PW._1._0.DTO;
-
+using Ads = CrawlFB_PW._1._0.DAO.AdsPowerPlaywrightManager;
 public class ManagerProfileDAO
 {
     private readonly string dbPath;
@@ -106,7 +106,21 @@ public class ManagerProfileDAO
         }
     }
     //
-   
+    public void DeleteByProfile(int profileId)
+    {
+        using (var conn = GetConn())
+        {
+            conn.Open();
+
+            string sql = @"DELETE FROM TableManagerProfile WHERE IDProfile = @id";
+
+            using (var cmd = new SQLiteCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@id", profileId);
+                cmd.ExecuteNonQuery();
+            }
+        }
+    }
     public void UpdateProfileUseTab(int profileId, int useTab)
     {
         string dbPath = PathHelper.Instance.GetProfileDatabasePath();
@@ -273,6 +287,9 @@ public class ManagerProfileDAO
             }
         }
     }
-
+    public bool IsProfileRunning(int profileId)
+    {
+        return CountMappingByProfile(profileId) > 0;
+    }
 
 }

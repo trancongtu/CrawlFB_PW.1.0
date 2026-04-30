@@ -30,6 +30,7 @@ using CrawlFB_PW._1._0.Service;
 using CrawlFB_PW._1._0.Helper.UI;
 
 using DevExpress.Utils;
+using CrawlFB_PW._1._0.Helper.Mapper;
 namespace CrawlFB_PW._1._0.Page
 {   
     public partial class FFirstScanPostPage : Form
@@ -820,7 +821,7 @@ namespace CrawlFB_PW._1._0.Page
             sb.AppendLine($"Poster: {post.PosterName}");
             sb.AppendLine($"PosterLink: {post.PosterLink ?? "N/A"}");
             sb.AppendLine($"PosterIdFB: {post.PosterIdFB ?? "N/A"}");
-            sb.AppendLine($"PosterNote: {post.PosterNote ?? "N/A"}");
+            sb.AppendLine($"PosterNote: {post.PosterNote}");
 
             sb.AppendLine($"Link: {post.PostLink}");
             sb.AppendLine($"Time: {post.PostTime}");
@@ -915,35 +916,15 @@ namespace CrawlFB_PW._1._0.Page
                             }    
                       
                             var shares = result.Shares;
-                            var postVMs = posts.Select(p => new PostInfoViewModel
-                            {
-                                PostID = p.PostID,
-                                PostLink = p.PostLink,
-                                Content = p.Content,
+                            var postVMs = posts.Select(p =>
+                             {
+                                 var vm = p.ToViewModel(); // 🔥 dùng mapper
 
-                                PosterName = p.PosterName,
-                                PosterLink = p.PosterLink,
-                                PosterNote = p.PosterNote,
-                                PosterIdFB = p.PosterIdFB,
+                                 vm.Status = UIStatus.Done;
+                                 vm.ParentPage = page;
 
-                                PageName = p.PageName,
-                                PageLink = p.PageLink,
-                                ContainerIdFB = p.ContainerIdFB,
-
-                                Like = p.LikeCount ?? 0,
-                                Comment = p.CommentCount ?? 0,
-                                Share = p.ShareCount ?? 0,
-                                PostType = ProcessingHelper.MapPostType(p.PostType),
-                                PostTimeRaw = p.PostTime,
-                                RealPostTime = p.RealPostTime,
-                                AttachmentView = AttachmentHelper.GetAttachmentForView(p.Attachment),
-                                Attachment = p.Attachment,
-                                HasVideo = p.PostType.Contains("Video") || p.PostType.Contains("Reel"),
-                                HasPhoto = p.PostType.Contains("Photo"),
-                                HasReel = p.PostType.Contains("Reel"),
-                                Status = UIStatus.Done,     // hoặc Pending
-                                ParentPage = page           // ⭐ BÂY GIỜ GÁN ĐƯỢC
-                            }).ToList();
+                                 return vm;
+                             }).ToList();
 
                             Libary.Instance.LogForm(module, "Chạy " + page.PageLink + " được tổng: " + posts.Count() + " bài viết");
                             this.Invoke(new Action(() =>

@@ -24,7 +24,7 @@ namespace CrawlFB_PW._1._0.Helper.UI
                 ShareCount = vm.Share,
 
                 Attachment = vm.Attachment,
-                PostType = vm.PostType.ToString(),
+                PostType = vm.PostType,
 
                 PageName = vm.PageName,
                 PageLink = vm.PageLink,
@@ -33,7 +33,9 @@ namespace CrawlFB_PW._1._0.Helper.UI
                 PosterLink = vm.PosterLink,
                 PosterNote = vm.PosterNote,
                 PosterIdFB = vm.PosterIdFB,
-                ContainerIdFB = vm.ContainerIdFB
+
+                ContainerIdFB = vm.ContainerIdFB,
+                ContainerType = vm.ContainerType
             };
         }
     }

@@ -19,7 +19,8 @@ namespace CrawlFB_PW._1._0
         static void Main()
         {
             
-            InitAppFolders();                
+            InitAppFolders();
+            SQLDAO_Server.Instance.InitUserTables();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new FMain());

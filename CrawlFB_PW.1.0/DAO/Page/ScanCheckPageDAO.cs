@@ -175,7 +175,7 @@ namespace CrawlFB_PW._1._0.DAO
 
             // 2️⃣ Check Type
             var type = await PageDAO.Instance.CheckFBTypeAsync(page);
-            info.PageType = type.ToString();
+            info.PageType = type; // enum
 
             Libary.Instance.LogDebug($"FBType = {type}");
 
